@@ -22,6 +22,7 @@ final class App: NSObject, NSApplicationDelegate {
     private let mover = WindowMover()
     private lazy var snapper = EdgeSnapper(mover: mover)
     private var tap: HotkeyTap!
+    private let chordTap = ChordTap()
     private var prefs: PreferencesWindowController?
     private var trustTimer: Timer?
     private var pollCount = 0
@@ -49,6 +50,16 @@ final class App: NSObject, NSApplicationDelegate {
         tap = HotkeyTap(bindings: model.tapBindings) { [weak self] token in self?.handle(token: token) ?? false }
         model.onChange = { [weak self] bindings in self?.tap.setBindings(bindings) }
         mover.onMoved = { [weak self] in self?.refreshIcon(force: true) }
+        chordTap.chord = model.chordModifier
+        model.onChordChange = { [weak self] chord in self?.chordTap.chord = chord }
+        chordTap.reservedKeys = { [weak self] chord in
+            ChordLogic.reservedKeys(self?.model.bindings ?? [], chord: chord)
+        }
+        chordTap.isSuspended = { [weak self] in self?.model.isRecording ?? false }
+        chordTap.onFinish = { [mover] window, selection, display in
+            mover.move(window, to: LayoutGrid().frame(for: selection, in: display.visibleFrame),
+                       visible: display.visibleFrame)
+        }
 
         if !tap.isTrusted { tap.requestTrust() }
         startIfTrusted()
@@ -74,6 +85,7 @@ final class App: NSObject, NSApplicationDelegate {
             return
         }
         if !tap.isRunning { tap.start() }
+        if !chordTap.isRunning { chordTap.start() }
         if edgeSnapping { snapper.start() }
         trustTimer?.invalidate()
         trustTimer = nil
@@ -96,6 +108,10 @@ final class App: NSObject, NSApplicationDelegate {
         if pollCount % 4 == 0, let tap, tap.isTrusted, tap.isRunning {
             tap.stop()
             tap.start()
+            if !chordTap.isBusy {
+                chordTap.stop()
+                chordTap.start()
+            }
         }
     }
 
@@ -200,19 +216,13 @@ final class App: NSObject, NSApplicationDelegate {
         let di = frontFrame.flatMap { displays.index(for: $0) }
             ?? displays.index(containing: Screens.cursor) ?? 0
         let visible = displays.isEmpty ? CGRect(x: 0, y: 0, width: 1512, height: 945) : displays[di].visibleFrame
-        let grid = LayoutGrid()
 
         let windows = displays.isEmpty ? [] : WindowMap.windows(WindowList.appWindows().map(\.bounds), on: di, of: displays)
-        var active = Set<GridCell>(), others = Set<GridCell>()
-        if let targetFrame { active = grid.cells(coveredBy: targetFrame, in: visible) }
-        for w in windows where w != targetFrame?.intersection(displays[di].frame) {
-            others.formUnion(grid.cells(coveredBy: w, in: visible))
-        }
-        others.subtract(active)
-
-        let model = GridMenuView.Model(grid: grid, visible: visible, activeCells: active, otherCells: others,
+        let clippedTarget = targetFrame.flatMap { displays.isEmpty ? nil : $0.intersection(displays[di].frame) }
+        let model = GridMenuView.Model(visible: visible, activeFrame: targetFrame,
+                                       otherFrames: windows.filter { $0 != clippedTarget },
                                        enabled: menuTarget != nil)
-        return GridMenuView(model: model) { [weak self] selection in
+        return GridMenuView(model: model) { [weak self] grid, selection in
             guard let self, let target = self.menuTarget else { return }
             self.mover.move(target, to: grid.frame(for: selection, in: visible), visible: visible)
         }

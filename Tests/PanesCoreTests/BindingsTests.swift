@@ -29,7 +29,7 @@ final class BindingsTests: XCTestCase {
         XCTAssertEqual(t(.maximize), .key(46, cmdOpt))     // M
         XCTAssertEqual(t(.center), .key(8, cmdOpt))        // C
         XCTAssertEqual(t(.restore), .key(51, cmdOpt))      // ⌫
-        XCTAssertEqual(t(.nextDisplay), .key(124, [.command, .option, .control]))
+        XCTAssertEqual(t(.nextDisplay), .key(45, [.command, .option]))
     }
 
     func testDefaultsDoNotConflict() {
@@ -55,8 +55,8 @@ final class BindingsTests: XCTestCase {
 
     func testArrowBindingsGetAnFnTwinForTheTap() {
         let tap = BindingStore.tapBindings(BindingStore.defaults)
-        // 5 arrow bindings (4 halves + next display) gain a twin; 7 letter/⌫ do not.
-        XCTAssertEqual(tap.count, 12 + 5)
+        // The 4 arrow bindings (halves) gain a twin; the 8 letter/⌫ ones do not.
+        XCTAssertEqual(tap.count, 12 + 4)
         let fnSig = EventSignature(kind: .key(123), modifiers: [.command, .option, .fn])
         let plainSig = EventSignature(kind: .key(123), modifiers: cmdOpt)
         XCTAssertEqual(tap.first { $0.matches(fnSig) }?.token, WindowAction.leftHalf.rawValue)
@@ -67,7 +67,7 @@ final class BindingsTests: XCTestCase {
 
     func testNextDisplayDoesNotFireLeftOrRightHalf() {
         let tap = BindingStore.tapBindings(BindingStore.defaults)
-        let sig = EventSignature(kind: .key(124), modifiers: [.command, .option, .control, .fn])
+        let sig = EventSignature(kind: .key(45), modifiers: [.command, .option])
         XCTAssertEqual(tap.first { $0.matches(sig) }?.token, WindowAction.nextDisplay.rawValue)
     }
 

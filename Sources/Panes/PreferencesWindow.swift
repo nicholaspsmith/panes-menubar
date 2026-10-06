@@ -56,6 +56,25 @@ struct PreferencesView: View {
                 }
             }
             Divider()
+            Text("Cell Keys").font(.headline)
+            HStack(spacing: 10) {
+                Picker("Hold", selection: $model.chordModifier) {
+                    ForEach(ChordModifier.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
+                .frame(width: 150)
+                Text("+ 1–8, 9, A, B, D–H, then let go")
+                    .foregroundColor(.secondary)
+            }
+            if let warning = model.chordModifier.warning {
+                Text(warning).font(.caption).foregroundColor(.secondary)
+            }
+            Text("One key fills that cell of the grid; two keys fill the rectangle between them "
+                 + "(1 then 8 is the top half). Cells are 1 2 3 4 / 5 6 7 8 / 9 A B D / E F G H; C stays Center. "
+                 + "Hold ⌥⌘ in the open menu to split its grid into half-cells.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Divider()
             HStack(alignment: .top) {
                 Text("Panes takes these keys before any app sees them, but only when there is a window to act on; "
                      + "otherwise they pass through. Press Esc while recording to cancel.")

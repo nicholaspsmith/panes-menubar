@@ -16,7 +16,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.1.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 0.2.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 ## Requirements
 
@@ -33,15 +33,60 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 | `⌥⌘U` / `⌥⌘I` | top-left / top-right quarter |
 | `⌥⌘J` / `⌥⌘K` | bottom-left / bottom-right quarter |
 | `⌥⌘M` | maximize (the visible frame: below the menu bar, beside the Dock) |
-| `⌥⌘C` | center, keeping the size |
+| `⌥⌘C` | center, keeping the size; press again to grow (see below) |
 | `⌥⌘⌫` | restore: undo the last move Panes made to this window (again for the one before) |
-| `⌃⌥⌘→` | move to the next display, keeping the window's relative frame |
+| `⌥⌘N` | move to the next display, keeping the window's relative frame |
+| `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two (see below) |
 
 Each acts on the focused window of the frontmost app. A shortcut is
 swallowed only when it applies: with no movable window in front, nothing to
 restore, or a single display for Next Display, the key passes through to the
 app. Rebind any of them in **Settings ▸ Preferences…** (Esc cancels a
 recording; a shortcut shared by two actions is flagged in red).
+
+### Center, then grow
+
+The first `⌥⌘C` centres the window at its own size. Pressing it again while
+the window is still where Panes put it (within 4 pt on every edge) re-centres
+it one step bigger, as a share of the visible frame's width and height: 50%,
+66%, 80%, then the whole visible frame, where it stays. A step that would not
+make the window bigger in both directions is skipped. Move the window by hand
+in between and the next press only centres it again.
+
+### Cell keys
+
+The grid's 16 cells have keys, row by row from the top-left (no `C`, which
+stays Center):
+
+```
+1 2 3 4
+5 6 7 8
+9 A B D
+E F G H
+```
+
+Hold `⌥⌘`, press a cell's key and let go: the front window fills that cell.
+Press two keys before letting go and it fills the rectangle spanning both, in
+either order (`1` then `8` is the top half, `1` then `H` maximizes); with more
+than two, the first and last count. A translucent preview shows the target
+while `⌥⌘` is held. A chord only starts on a cell key, so `⌥⌘` with an arrow,
+`U` `I` `J` `K`, `M`, `C` or `⌫` still acts at once (and drops any chord in
+progress), as does any shortcut you rebind onto a cell key. Cell keys are
+taken only while a window is in front to arrange.
+
+**Panes takes over `⌥⌘D`** (macOS: hide or show the Dock) **and `⌥⌘H`**
+(Hide Others) whenever a window is in front. Preferences can move cell keys to
+`⌃⌥`, `⌃⌥⌘` or `⇧⌘` (the last takes over the screenshot shortcuts `⇧⌘3`,
+`⇧⌘4` and `⇧⌘5`).
+
+### Half-cells
+
+While the menu is open, hold `⌥⌘` and the grid splits every cell into its own
+2×2, an 8×8 grid of half-cells. Click one, or drag across several, to fill
+that area exactly as with the 4×4 grid; shading follows the finer cells. Let
+go of `⌥⌘` to return to 4×4 (cell-key labels show only there).
+
+![The menu's grid split into half-cells](docs/menu-fine.png)
 
 <p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset"></p>
 
@@ -50,7 +95,8 @@ recording; a shortcut shared by two actions is flagged in red).
 ![The open menu](docs/menu.png)
 
 - **The layout grid**: the display the front window is on, cut into 4×4
-  cells at its visible frame's aspect ratio. Click a cell and the window fills
+  cells at its visible frame's aspect ratio, each labelled with its
+  [cell key](#cell-keys) (hold `⌥⌘` for [half-cells](#half-cells)). Click a cell and the window fills
   it; drag across cells and the selection highlights as you go, and the
   window fills it on release (a 2×4 drag from the top-left is the left half).
   Cells under the front window are shaded in the accent colour, cells under
@@ -121,6 +167,10 @@ now. When one is chosen, add it to StatusItemKit's `CharacterIcon` and
   without fn. While Preferences records a shortcut, the tap lets keys through
   to the recorder. The tap is re-created every 6 s to stay ahead of taps other
   apps add later.
+- **Cell keys** need a second tap of Panes's own (`ChordTap`): a chord ends
+  when the modifiers are *released*, and HotkeyKit's tap never sees
+  `flagsChanged`. It swallows only cell-key presses (and their key-ups) made
+  with exactly the chord modifiers; `ChordLogic` in PanesCore decides.
 - **Accessibility** (`AXUIElement`) reads and sets the focused window's
   position and size (messaging timeout 0.3 s, so a hung app cannot stall the
   tap). Only standard windows and dialogs whose position is settable, not
@@ -137,7 +187,7 @@ now. When one is chosen, add it to StatusItemKit's `CharacterIcon` and
   without changing size, which tells a title-bar drag from a resize or a drag
   inside the content.
 - **PanesCore** holds the testable logic: frames for every action on any
-  display layout, the relative move between displays, the fit-after-refusal
+  display layout, center-and-grow steps, cell-key chords, the relative move between displays, the fit-after-refusal
   nudge, snap zones, restore history, the grid, the frame interpolation and
   pacing, the icon's window mapping and pixel alignment, bindings and their
   formatting. **PanesGlyph** draws the icon, shared by the app and

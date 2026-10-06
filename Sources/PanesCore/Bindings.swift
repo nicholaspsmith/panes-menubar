@@ -19,6 +19,7 @@ public enum KeyCode {
     public static let k: CGKeyCode = 40
     public static let m: CGKeyCode = 46
     public static let c: CGKeyCode = 8
+    public static let n: CGKeyCode = 45
     public static let delete: CGKeyCode = 51
 
     /// Keys macOS flags as "function keys" on every keyboard: the arrows,
@@ -33,7 +34,7 @@ public enum BindingStore {
 
     /// Nick's defaults: ⌘⌥ + arrows for halves, U I J K for the quarters (the
     /// keys sit in the same 2×2 arrangement as the corners), M maximize,
-    /// C center, ⌫ restore, ⌃⌘⌥→ next display.
+    /// C center, ⌫ restore, N next display — every one on ⌘⌥.
     public static let defaults: [Binding] = [
         Binding(token: WindowAction.leftHalf.rawValue, trigger: .key(KeyCode.leftArrow, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.rightHalf.rawValue, trigger: .key(KeyCode.rightArrow, cmdOpt), repeatsOnHold: false),
@@ -46,7 +47,7 @@ public enum BindingStore {
         Binding(token: WindowAction.maximize.rawValue, trigger: .key(KeyCode.m, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.center.rawValue, trigger: .key(KeyCode.c, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.restore.rawValue, trigger: .key(KeyCode.delete, cmdOpt), repeatsOnHold: false),
-        Binding(token: WindowAction.nextDisplay.rawValue, trigger: .key(KeyCode.rightArrow, cmdOpt.union(.control)), repeatsOnHold: false),
+        Binding(token: WindowAction.nextDisplay.rawValue, trigger: .key(KeyCode.n, cmdOpt), repeatsOnHold: false),
     ]
 
     /// Merge user overrides (token → trigger) over the defaults, in action

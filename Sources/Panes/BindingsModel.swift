@@ -20,6 +20,16 @@ final class BindingsModel: ObservableObject {
 
     var onChange: (([Binding]) -> Void)?
 
+    /// The modifiers held to type cell keys (⌥⌘ by default).
+    @Published var chordModifier: ChordModifier {
+        didSet {
+            UserDefaults.standard.set(chordModifier.rawValue, forKey: Self.chordKey)
+            onChordChange?(chordModifier)
+        }
+    }
+    var onChordChange: ((ChordModifier) -> Void)?
+    private static let chordKey = "chordModifier"
+
     var tapBindings: [Binding] { BindingStore.tapBindings(bindings) }
 
     private var overrides: [String: Trigger]
@@ -28,6 +38,8 @@ final class BindingsModel: ObservableObject {
     init() {
         overrides = Self.load()
         bindings = BindingStore.resolve(overrides: overrides)
+        chordModifier = UserDefaults.standard.string(forKey: Self.chordKey).flatMap(ChordModifier.init(rawValue:))
+            ?? .default
     }
 
     func trigger(for action: WindowAction) -> Trigger? {

@@ -45,6 +45,10 @@ public struct LayoutGrid: Equatable, Sendable {
         self.rows = max(1, rows)
     }
 
+    /// The menu's fine grid, shown while ⌥⌘ is held: each 4×4 cell split
+    /// into its own 2×2. Its edges fall on the 4×4 grid's edges exactly.
+    public static let fine = LayoutGrid(columns: 8, rows: 8)
+
     public var cells: [GridCell] {
         (0..<rows).flatMap { r in (0..<columns).map { GridCell(column: $0, row: r) } }
     }
