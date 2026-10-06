@@ -15,7 +15,7 @@ import HotkeyKit
 ///     9 A B D
 ///     E F G H
 ///
-/// C is skipped: ⌥⌘C is Center. None of the quarter keys (U I J K) or M is a
+/// C is skipped: ⌥⌘C is Center. None of the quarter keys ([ ] ; ') or M is a
 /// cell key either, so every default ⌥⌘ shortcut still fires at once.
 public enum CellKeys {
     public static let labels: [String] = ["1", "2", "3", "4", "5", "6", "7", "8",
@@ -43,7 +43,7 @@ public enum CellKeys {
 
 /// The modifiers held to type cell keys: ⌥⌘ by default, the same as the
 /// other window shortcuts. A chord only starts on a cell key, so ⌥⌘ plus an
-/// arrow, U I J K, M, C or ⌫ still acts at once.
+/// arrow, [ ] ; ', M, C or ⌫ still acts at once.
 public enum ChordModifier: String, CaseIterable, Sendable {
     case commandOption
     case controlOption

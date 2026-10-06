@@ -23,6 +23,17 @@ final class App: NSObject, NSApplicationDelegate {
     private lazy var snapper = EdgeSnapper(mover: mover)
     private var tap: HotkeyTap!
     private let chordTap = ChordTap()
+    /// The grid that covers the screen while ⌥⌘ is held.
+    private let overlay = GridOverlay()
+    private var holdGrid = HoldGrid()
+    private var holdTimer: Timer?
+    private var menuOpen = false
+
+    private static let holdGridKey = "holdGrid"
+    private var holdGridEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: Self.holdGridKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: Self.holdGridKey) }
+    }
     private var prefs: PreferencesWindowController?
     private var trustTimer: Timer?
     private var pollCount = 0
@@ -56,6 +67,18 @@ final class App: NSObject, NSApplicationDelegate {
             ChordLogic.reservedKeys(self?.model.bindings ?? [], chord: chord)
         }
         chordTap.isSuspended = { [weak self] in self?.model.isRecording ?? false }
+        chordTap.onModifiers = { [weak self] held in self?.holdModifiers(held) }
+        chordTap.onAnyKeyDown = { [weak self] in self?.holdKeyDown() }
+        overlay.onPick = { [weak self] window, frame, visible in
+            guard let self else { return }
+            self.apply(self.holdGrid.dismissed())
+            self.mover.move(window, to: frame, visible: visible)
+        }
+        status.onMenuWillOpen = { [weak self] in
+            self?.menuOpen = true
+            self?.holdKeyDown()
+        }
+        status.onMenuDidClose = { [weak self] in self?.menuOpen = false }
         chordTap.onFinish = { [mover] window, selection, display in
             mover.move(window, to: LayoutGrid().frame(for: selection, in: display.visibleFrame),
                        visible: display.visibleFrame)
@@ -115,11 +138,49 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
+    // MARK: - Grid on hold ⌥⌘
+
+    private func holdModifiers(_ held: Modifiers) {
+        guard holdGridEnabled, !model.isRecording else { return }
+        holdGrid.delay = model.holdDelay
+        apply(holdGrid.modifiers(held, at: CACurrentMediaTime(), mouseDown: NSEvent.pressedMouseButtons != 0))
+    }
+
+    private func holdKeyDown() {
+        apply(holdGrid.keyDown())
+    }
+
+    private func apply(_ effect: HoldGrid.Effect) {
+        switch effect {
+        case .none:
+            break
+        case .arm(let at):
+            holdTimer?.invalidate()
+            let t = Timer(timeInterval: max(0, at - CACurrentMediaTime()), repeats: false) { [weak self] _ in
+                guard let self else { return }
+                let canShow = self.trusted && !self.menuOpen && AXWindow.focused() != nil
+                self.apply(self.holdGrid.tick(at: CACurrentMediaTime(),
+                                              mouseDown: NSEvent.pressedMouseButtons != 0, canShow: canShow))
+            }
+            RunLoop.main.add(t, forMode: .common)
+            holdTimer = t
+        case .show:
+            if !overlay.show(fine: holdGrid.phase.isFine) { _ = holdGrid.dismissed() }
+        case .hide:
+            holdTimer?.invalidate()
+            overlay.hide()
+        case .setFine(let fine):
+            overlay.setFine(fine)
+        }
+    }
+
     // MARK: - Shortcuts
 
     /// Swallow the key only when there is a window to act on and the action
     /// applies to it; otherwise the front app gets the key as usual.
     private func handle(token: String) -> Bool {
+        // The shortcut tap may see a key before the chord tap does.
+        holdKeyDown()
         guard !model.isRecording, let action = WindowAction(rawValue: token),
               let window = AXWindow.focused(), mover.canPerform(action, on: window) else { return false }
         // Return to the tap at once; move on the next run-loop turn.
@@ -201,10 +262,15 @@ final class App: NSObject, NSApplicationDelegate {
         }
 
         SettingsMenu.addFooter(to: menu, appName: "Panes", items: { sub in
-            let snap = self.actionItem("Edge Snapping", #selector(self.toggleEdgeSnapping))
-            snap.state = self.edgeSnapping ? .on : .off
-            snap.toolTip = "Drag a window to a display edge or corner to snap it there"
-            sub.addItem(snap)
+            // Checkboxes keep the menu open (StatusItemKit's ToggleMenuItem).
+            sub.addItem(ToggleMenuItem.make(
+                title: "Edge Snapping", isOn: self.edgeSnapping,
+                toolTip: "Drag a window to a display edge or corner to snap it there"
+            ) { [weak self] on in self?.setEdgeSnapping(on) })
+            sub.addItem(ToggleMenuItem.make(
+                title: "Grid on Hold ⌥⌘", isOn: self.holdGridEnabled,
+                toolTip: "Hold ⌥⌘ on its own and a grid covers the screen; click or drag across cells"
+            ) { [weak self] on in self?.setHoldGrid(on) })
             sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
         })
     }
@@ -265,9 +331,14 @@ final class App: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension")!)
     }
 
-    @objc private func toggleEdgeSnapping() {
-        edgeSnapping.toggle()
+    private func setEdgeSnapping(_ on: Bool) {
+        edgeSnapping = on
         if edgeSnapping, trusted { snapper.start() } else { snapper.stop() }
+    }
+
+    private func setHoldGrid(_ on: Bool) {
+        holdGridEnabled = on
+        if !holdGridEnabled { apply(holdGrid.dismissed()) }
     }
 
     @objc private func openPrefs() {

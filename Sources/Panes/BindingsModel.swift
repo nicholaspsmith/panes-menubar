@@ -28,6 +28,12 @@ final class BindingsModel: ObservableObject {
         }
     }
     var onChordChange: ((ChordModifier) -> Void)?
+
+    /// How long ⌥⌘ must be held alone before the on-screen grid appears.
+    @Published var holdDelay: TimeInterval {
+        didSet { UserDefaults.standard.set(holdDelay, forKey: Self.holdDelayKey) }
+    }
+    private static let holdDelayKey = "holdGridDelay"
     private static let chordKey = "chordModifier"
 
     var tapBindings: [Binding] { BindingStore.tapBindings(bindings) }
@@ -40,6 +46,8 @@ final class BindingsModel: ObservableObject {
         bindings = BindingStore.resolve(overrides: overrides)
         chordModifier = UserDefaults.standard.string(forKey: Self.chordKey).flatMap(ChordModifier.init(rawValue:))
             ?? .default
+        let stored = UserDefaults.standard.object(forKey: Self.holdDelayKey) as? Double ?? HoldGrid.defaultDelay
+        holdDelay = min(max(stored, HoldGrid.delayRange.lowerBound), HoldGrid.delayRange.upperBound)
     }
 
     func trigger(for action: WindowAction) -> Trigger? {

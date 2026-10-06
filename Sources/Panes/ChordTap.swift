@@ -32,6 +32,11 @@ final class ChordTap {
     private var swallowedKeys: Set<CGKeyCode> = []
     private let hud = SnapOverlay()
 
+    /// Every modifier change and every key press, for the hold-⌥⌘ grid
+    /// (this tap is the one that sees modifier changes).
+    var onModifiers: (Modifiers) -> Void = { _ in }
+    var onAnyKeyDown: () -> Void = {}
+
     var isRunning: Bool { tap != nil }
     /// A chord is being typed (re-creating the tap now would drop it).
     var isBusy: Bool { !cells.isEmpty }
@@ -85,9 +90,11 @@ final class ChordTap {
         case .keyUp:
             return swallowedKeys.remove(code) != nil ? nil : pass
         case .flagsChanged:
+            onModifiers(held)
             if ChordLogic.flagsChanged(held: held, chord: chord, active: !cells.isEmpty) == .finish { finish() }
             return pass
         case .keyDown:
+            onAnyKeyDown()
             guard !isSuspended() else { return pass }
             switch ChordLogic.keyDown(code, held: held, chord: chord, active: !cells.isEmpty,
                                      reserved: reservedKeys(chord)) {

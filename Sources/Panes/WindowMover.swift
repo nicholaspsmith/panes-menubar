@@ -17,6 +17,9 @@ final class WindowMover {
     /// The frame Panes last gave each window, so Center can tell a second
     /// press (grow) from a first one (just centre).
     private var lastPlaced: [WindowKey: CGRect] = [:]
+    /// Where the last Center press left each window, so a repeated press
+    /// steps its size up or down.
+    private var lastCentered: [WindowKey: CenterGrow.State] = [:]
     private var running: [WindowKey: Glide] = [:]
     /// Seconds one position+size set took, per app, smoothed. Drives
     /// `AnimationPacing` so a slow app gets fewer steps instead of a stutter.
@@ -41,6 +44,7 @@ final class WindowMover {
 
     @discardableResult
     func perform(_ action: WindowAction, on window: AXWindow) -> Bool {
+        log.notice("perform \(action.rawValue, privacy: .public)")
         guard let current = currentFrame(window) else { return false }
         let displays = Screens.displays
         guard let di = displays.index(for: current) else { return false }
@@ -54,12 +58,19 @@ final class WindowMover {
             return true
         case .center:
             let v = displays[di].visibleFrame
-            let target = CenterGrow.target(window: current, visible: v, lastPlaced: lastPlaced[window.key])
-            return move(window, from: current, to: target, visible: v)
+            let state = CenterGrow.next(window: current, visible: v, last: lastCentered[window.key])
+            if lastCentered.count > 200 { lastCentered.removeAll() }
+            lastCentered[window.key] = state
+            return move(window, from: current, to: state.frame, visible: v)
         case .nextDisplay:
             guard let ni = displays.next(after: di) else { return false }
             let target = FrameCalculator.moved(current, from: displays[di].visibleFrame, to: displays[ni].visibleFrame)
             return move(window, from: current, to: target, visible: displays[ni].visibleFrame)
+        case .leftHalf, .rightHalf, .topHalf, .bottomHalf:
+            // Arrows combine like Windows 11's: ← then ↑ is the top-left quarter.
+            let v = displays[di].visibleFrame
+            guard let target = ArrowTiling.frame(for: action, window: current, visible: v) else { return false }
+            return move(window, from: current, to: target, visible: v)
         default:
             guard let target = FrameCalculator.frame(for: action, window: current, visible: displays[di].visibleFrame)
             else { return false }
@@ -70,8 +81,12 @@ final class WindowMover {
     /// Move to an explicit frame (the grid, an edge snap), remembering the old
     /// one for Restore.
     @discardableResult
-    func move(_ window: AXWindow, from current: CGRect? = nil, to target: CGRect, visible: CGRect) -> Bool {
+    func move(_ window: AXWindow, from current: CGRect? = nil, to target: CGRect, visible: CGRect,
+              caller: String = #fileID, line: Int = #line) -> Bool {
         guard let current = current ?? currentFrame(window) else { return false }
+        // Every move is logged with where it came from, so an unexpected one
+        // can be traced: log show --predicate 'subsystem == "com.nicholaspsmith.Panes"'
+        log.notice("move from \(caller, privacy: .public):\(line, privacy: .public) \(String(describing: current), privacy: .public) -> \(String(describing: target), privacy: .public)")
         var target = target
         // A window that cannot be resized keeps its size, placed against the
         // same edges the target hugs.

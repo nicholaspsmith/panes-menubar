@@ -22,10 +22,10 @@ final class BindingsTests: XCTestCase {
         XCTAssertEqual(t(.rightHalf), .key(124, cmdOpt))
         XCTAssertEqual(t(.topHalf), .key(126, cmdOpt))
         XCTAssertEqual(t(.bottomHalf), .key(125, cmdOpt))
-        XCTAssertEqual(t(.topLeft), .key(32, cmdOpt))      // U
-        XCTAssertEqual(t(.topRight), .key(34, cmdOpt))     // I
-        XCTAssertEqual(t(.bottomLeft), .key(38, cmdOpt))   // J
-        XCTAssertEqual(t(.bottomRight), .key(40, cmdOpt))  // K
+        XCTAssertEqual(t(.topLeft), .key(33, cmdOpt))      // [
+        XCTAssertEqual(t(.topRight), .key(30, cmdOpt))     // ]
+        XCTAssertEqual(t(.bottomLeft), .key(41, cmdOpt))   // ;
+        XCTAssertEqual(t(.bottomRight), .key(39, cmdOpt))  // '
         XCTAssertEqual(t(.maximize), .key(46, cmdOpt))     // M
         XCTAssertEqual(t(.center), .key(8, cmdOpt))        // C
         XCTAssertEqual(t(.restore), .key(51, cmdOpt))      // ⌫

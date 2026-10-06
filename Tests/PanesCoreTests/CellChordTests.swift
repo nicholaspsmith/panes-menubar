@@ -25,7 +25,7 @@ final class CellKeysTests: XCTestCase {
     }
 
     func testNoDefaultShortcutKeyIsACellKey() {
-        // C (center), U I J K (quarters), M (maximize), ⌫ and the arrows fire at once.
+        // C (center), [ ] ; ' (quarters), M (maximize), ⌫ and the arrows fire at once.
         for b in BindingStore.defaults {
             guard case let .key(code, _) = b.trigger else { continue }
             XCTAssertNil(CellKeys.cell(forKeyCode: code), b.token)

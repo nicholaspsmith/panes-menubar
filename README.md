@@ -16,7 +16,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.2.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 0.3.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 ## Requirements
 
@@ -28,12 +28,12 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 
 | Shortcut (default) | Action |
 |--------------------|--------|
-| `⌥⌘←` / `⌥⌘→` | left / right half |
-| `⌥⌘↑` / `⌥⌘↓` | top / bottom half |
-| `⌥⌘U` / `⌥⌘I` | top-left / top-right quarter |
-| `⌥⌘J` / `⌥⌘K` | bottom-left / bottom-right quarter |
+| `⌥⌘←` / `⌥⌘→` | left / right half; from a top or bottom half or quarter, the quarter on that side (see below) |
+| `⌥⌘↑` / `⌥⌘↓` | top / bottom half; from a left or right half or quarter, the quarter at that end |
+| `⌥⌘[` / `⌥⌘]` | top-left / top-right quarter |
+| `⌥⌘;` / `⌥⌘'` | bottom-left / bottom-right quarter |
 | `⌥⌘M` | maximize (the visible frame: below the menu bar, beside the Dock) |
-| `⌥⌘C` | center, keeping the size; press again to grow (see below) |
+| `⌥⌘C` | center at the screen's proportions; press again to step the size up, then down (see below) |
 | `⌥⌘⌫` | restore: undo the last move Panes made to this window (again for the one before) |
 | `⌥⌘N` | move to the next display, keeping the window's relative frame |
 | `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two (see below) |
@@ -46,12 +46,23 @@ recording; a shortcut shared by two actions is flagged in red).
 
 ### Center, then grow
 
-The first `⌥⌘C` centres the window at its own size. Pressing it again while
-the window is still where Panes put it (within 4 pt on every edge) re-centres
-it one step bigger, as a share of the visible frame's width and height: 50%,
-66%, 80%, then the whole visible frame, where it stays. A step that would not
-make the window bigger in both directions is skipped. Move the window by hand
-in between and the next press only centres it again.
+`⌥⌘C` centres the window, horizontally and vertically, at the screen's own
+proportions. Its sizes are 50%, 66%, 80% and 100% of the visible frame's width
+and height. The first press picks the size closest to the window's current
+one; each further press (while the window is still where the last `⌥⌘C` put
+it) steps one size up until it fills the screen, then back down to 50%, then
+up again, for as long as you keep pressing. Move the window in between (by
+hand or with another Panes action) and the next press starts over.
+
+### Arrows combine
+
+The arrows work like Windows 11's Win + arrows: Panes reads which half or
+quarter the window is in now, and each arrow moves one edge. `⌥⌘←` then `⌥⌘↑`
+is the top-left quarter; from there `⌥⌘→` is top-right and `⌥⌘↓`
+bottom-right. A window that isn't in a half or quarter gets a half: `⌥⌘←`
+the left half, `⌥⌘↑` the top half. Pressing toward the side the window is already
+on widens it back to that half: `⌥⌘→` on the top-right quarter is the right
+half, `⌥⌘↑` on it the top half.
 
 ### Cell keys
 
@@ -79,12 +90,36 @@ taken only while a window is in front to arrange.
 `⌃⌥`, `⌃⌥⌘` or `⇧⌘` (the last takes over the screenshot shortcuts `⇧⌘3`,
 `⇧⌘4` and `⇧⌘5`).
 
+### Grid on hold ⌥⌘
+
+Hold `⌥⌘` on its own (no other key, no mouse button) for a moment (0.35 s by
+default) and a dark grid fades in over the front window's display. It covers
+exactly the display's visible frame, below the menu bar and beside the Dock,
+so each cell sits over the very area a window filling it would take. The same
+4×4 grid as the menu, with the same cell labels and shading: click a cell, or
+drag across cells, and the front window fills it. The app you were in keeps
+focus throughout.
+
+- Let go of `⌥` or `⌘` and it fades out (a drag in progress is dropped).
+- Press any key while it is up, a cell key or a shortcut included, and it
+  goes at once; the key does what it always does. Panes never takes `Esc`,
+  so `⌥⌘Esc` is still Force Quit.
+- A quick `⌥⌘` shortcut or a cell-key chord never brings it up: any key
+  during the hold cancels it until `⌥⌘` is let go.
+- Hold `⌥⌘⇧` (from the start, or add `⇧` while it is up) for half-cells;
+  drop `⇧` for 4×4 again.
+
+Turn it off in **Settings ▸ Grid on Hold ⌥⌘**; set the delay in Preferences.
+
+![The grid on hold ⌥⌘](docs/overlay.png)
+
 ### Half-cells
 
-While the menu is open, hold `⌥⌘` and the grid splits every cell into its own
-2×2, an 8×8 grid of half-cells. Click one, or drag across several, to fill
-that area exactly as with the 4×4 grid; shading follows the finer cells. Let
-go of `⌥⌘` to return to 4×4 (cell-key labels show only there).
+Hold `⌥⌘⇧` while the menu is open (or on the hold-⌥⌘ grid) and every cell
+splits into its own 2×2, an 8×8 grid of half-cells. Click one, or drag across
+several, to fill that area exactly as with the 4×4 grid; shading follows the
+finer cells. Let go of `⇧` to return to 4×4 (cell-key labels show only there).
+`⌥⌘⇧` on its own is never taken from apps and never starts a chord.
 
 ![The menu's grid split into half-cells](docs/menu-fine.png)
 
@@ -96,7 +131,7 @@ go of `⌥⌘` to return to 4×4 (cell-key labels show only there).
 
 - **The layout grid**: the display the front window is on, cut into 4×4
   cells at its visible frame's aspect ratio, each labelled with its
-  [cell key](#cell-keys) (hold `⌥⌘` for [half-cells](#half-cells)). Click a cell and the window fills
+  [cell key](#cell-keys) (hold `⌥⌘⇧` for [half-cells](#half-cells)). Click a cell and the window fills
   it; drag across cells and the selection highlights as you go, and the
   window fills it on release (a 2×4 drag from the top-left is the left half).
   Cells under the front window are shaded in the accent colour, cells under
@@ -111,6 +146,7 @@ go of `⌥⌘` to return to 4×4 (cell-key labels show only there).
   `EnableTopTilingByEdgeDrag`; unset means on). Opens Desktop & Dock.
 - **Settings ▸** (StatusItemKit's `SettingsMenu`)
   - **Edge Snapping**: on by default.
+  - **Grid on Hold ⌥⌘**: on by default; see [below](#grid-on-hold-).
   - **Preferences…** (⌘,): rebind the shortcuts.
   - **Start at Login**, then the version.
 - **Quit Panes** (⌘Q).
@@ -169,7 +205,9 @@ now. When one is chosen, add it to StatusItemKit's `CharacterIcon` and
   apps add later.
 - **Cell keys** need a second tap of Panes's own (`ChordTap`): a chord ends
   when the modifiers are *released*, and HotkeyKit's tap never sees
-  `flagsChanged`. It swallows only cell-key presses (and their key-ups) made
+  `flagsChanged`. The same tap feeds the hold-⌥⌘ grid (`HoldGrid` in
+  PanesCore decides when it shows and goes; the grid view is shared with the
+  menu). It swallows only cell-key presses (and their key-ups) made
   with exactly the chord modifiers; `ChordLogic` in PanesCore decides.
 - **Accessibility** (`AXUIElement`) reads and sets the focused window's
   position and size (messaging timeout 0.3 s, so a hung app cannot stall the

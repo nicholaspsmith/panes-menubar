@@ -45,7 +45,8 @@ public struct LayoutGrid: Equatable, Sendable {
         self.rows = max(1, rows)
     }
 
-    /// The menu's fine grid, shown while ⌥⌘ is held: each 4×4 cell split
+    /// The fine grid, shown while ⌥⌘⇧ is held (in the menu and on the
+    /// overlay): each 4×4 cell split
     /// into its own 2×2. Its edges fall on the 4×4 grid's edges exactly.
     public static let fine = LayoutGrid(columns: 8, rows: 8)
 
