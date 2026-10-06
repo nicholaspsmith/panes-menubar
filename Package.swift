@@ -1,0 +1,42 @@
+// swift-tools-version:5.9
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2026 Nicholas Smith
+
+import PackageDescription
+
+let package = Package(
+    name: "Panes",
+    platforms: [.macOS(.v13)],
+    products: [
+        .executable(name: "Panes", targets: ["Panes"]),
+        .library(name: "PanesCore", targets: ["PanesCore"]),
+        // Renders docs/menubar-icon.png and the app icon from the app's own drawing code.
+        .executable(name: "panes-render-icons", targets: ["RenderIcons"]),
+    ],
+    dependencies: [
+        .package(path: "../StatusItemKit"),
+        .package(path: "../HotkeyKit"),
+    ],
+    targets: [
+        .target(
+            name: "PanesCore",
+            dependencies: [.product(name: "HotkeyKit", package: "HotkeyKit")]
+        ),
+        // The menu-bar icon's drawing (AppKit), shared by the app and the renderer.
+        .target(name: "PanesGlyph", dependencies: ["PanesCore"]),
+        .executableTarget(name: "RenderIcons", dependencies: ["PanesGlyph", "PanesCore"]),
+        .executableTarget(
+            name: "Panes",
+            dependencies: [
+                "PanesCore",
+                "PanesGlyph",
+                .product(name: "StatusItemKit", package: "StatusItemKit"),
+                .product(name: "HotkeyKit", package: "HotkeyKit"),
+            ]
+        ),
+        .testTarget(name: "PanesCoreTests", dependencies: ["PanesCore"]),
+    ]
+)
