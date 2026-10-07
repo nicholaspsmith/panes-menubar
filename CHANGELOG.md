@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.4.0] - 2026-10-07
+
+- No user-visible changes.
+
 ## [0.3.1] - 2026-10-07
 
 - Clicking a window in Mission Control or App Exposé no longer snaps it (to full screen when the pointer was near the top): presses on the system's own overview are never treated as window drags
