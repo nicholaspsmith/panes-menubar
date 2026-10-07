@@ -22,6 +22,18 @@ final class App: NSObject, NSApplicationDelegate {
     private let mover = WindowMover()
     private lazy var snapper = EdgeSnapper(mover: mover)
     private var tap: HotkeyTap!
+    private let chordTap = ChordTap()
+    /// The grid that covers the screen while ⌥⌘ is held.
+    private let overlay = GridOverlay()
+    private var holdGrid = HoldGrid()
+    private var holdTimer: Timer?
+    private var menuOpen = false
+
+    private static let holdGridKey = "holdGrid"
+    private var holdGridEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: Self.holdGridKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: Self.holdGridKey) }
+    }
     private var prefs: PreferencesWindowController?
     private var trustTimer: Timer?
     private var pollCount = 0
@@ -49,6 +61,28 @@ final class App: NSObject, NSApplicationDelegate {
         tap = HotkeyTap(bindings: model.tapBindings) { [weak self] token in self?.handle(token: token) ?? false }
         model.onChange = { [weak self] bindings in self?.tap.setBindings(bindings) }
         mover.onMoved = { [weak self] in self?.refreshIcon(force: true) }
+        chordTap.chord = model.chordModifier
+        model.onChordChange = { [weak self] chord in self?.chordTap.chord = chord }
+        chordTap.reservedKeys = { [weak self] chord in
+            ChordLogic.reservedKeys(self?.model.bindings ?? [], chord: chord)
+        }
+        chordTap.isSuspended = { [weak self] in self?.model.isRecording ?? false }
+        chordTap.onModifiers = { [weak self] held in self?.holdModifiers(held) }
+        chordTap.onAnyKeyDown = { [weak self] in self?.holdKeyDown() }
+        overlay.onPick = { [weak self] window, frame, visible in
+            guard let self else { return }
+            self.apply(self.holdGrid.dismissed())
+            self.mover.move(window, to: frame, visible: visible)
+        }
+        status.onMenuWillOpen = { [weak self] in
+            self?.menuOpen = true
+            self?.holdKeyDown()
+        }
+        status.onMenuDidClose = { [weak self] in self?.menuOpen = false }
+        chordTap.onFinish = { [mover] window, selection, display in
+            mover.move(window, to: LayoutGrid().frame(for: selection, in: display.visibleFrame),
+                       visible: display.visibleFrame)
+        }
 
         if !tap.isTrusted { tap.requestTrust() }
         startIfTrusted()
@@ -74,6 +108,7 @@ final class App: NSObject, NSApplicationDelegate {
             return
         }
         if !tap.isRunning { tap.start() }
+        if !chordTap.isRunning { chordTap.start() }
         if edgeSnapping { snapper.start() }
         trustTimer?.invalidate()
         trustTimer = nil
@@ -96,6 +131,46 @@ final class App: NSObject, NSApplicationDelegate {
         if pollCount % 4 == 0, let tap, tap.isTrusted, tap.isRunning {
             tap.stop()
             tap.start()
+            if !chordTap.isBusy {
+                chordTap.stop()
+                chordTap.start()
+            }
+        }
+    }
+
+    // MARK: - Grid on hold ⌥⌘
+
+    private func holdModifiers(_ held: Modifiers) {
+        guard holdGridEnabled, !model.isRecording else { return }
+        holdGrid.delay = model.holdDelay
+        apply(holdGrid.modifiers(held, at: CACurrentMediaTime(), mouseDown: NSEvent.pressedMouseButtons != 0))
+    }
+
+    private func holdKeyDown() {
+        apply(holdGrid.keyDown())
+    }
+
+    private func apply(_ effect: HoldGrid.Effect) {
+        switch effect {
+        case .none:
+            break
+        case .arm(let at):
+            holdTimer?.invalidate()
+            let t = Timer(timeInterval: max(0, at - CACurrentMediaTime()), repeats: false) { [weak self] _ in
+                guard let self else { return }
+                let canShow = self.trusted && !self.menuOpen && AXWindow.focused() != nil
+                self.apply(self.holdGrid.tick(at: CACurrentMediaTime(),
+                                              mouseDown: NSEvent.pressedMouseButtons != 0, canShow: canShow))
+            }
+            RunLoop.main.add(t, forMode: .common)
+            holdTimer = t
+        case .show:
+            if !overlay.show(fine: holdGrid.phase.isFine) { _ = holdGrid.dismissed() }
+        case .hide:
+            holdTimer?.invalidate()
+            overlay.hide()
+        case .setFine(let fine):
+            overlay.setFine(fine)
         }
     }
 
@@ -104,6 +179,8 @@ final class App: NSObject, NSApplicationDelegate {
     /// Swallow the key only when there is a window to act on and the action
     /// applies to it; otherwise the front app gets the key as usual.
     private func handle(token: String) -> Bool {
+        // The shortcut tap may see a key before the chord tap does.
+        holdKeyDown()
         guard !model.isRecording, let action = WindowAction(rawValue: token),
               let window = AXWindow.focused(), mover.canPerform(action, on: window) else { return false }
         // Return to the tap at once; move on the next run-loop turn.
@@ -185,10 +262,15 @@ final class App: NSObject, NSApplicationDelegate {
         }
 
         SettingsMenu.addFooter(to: menu, appName: "Panes", items: { sub in
-            let snap = self.actionItem("Edge Snapping", #selector(self.toggleEdgeSnapping))
-            snap.state = self.edgeSnapping ? .on : .off
-            snap.toolTip = "Drag a window to a display edge or corner to snap it there"
-            sub.addItem(snap)
+            // Checkboxes keep the menu open (StatusItemKit's ToggleMenuItem).
+            sub.addItem(ToggleMenuItem.make(
+                title: "Edge Snapping", isOn: self.edgeSnapping,
+                toolTip: "Drag a window to a display edge or corner to snap it there"
+            ) { [weak self] on in self?.setEdgeSnapping(on) })
+            sub.addItem(ToggleMenuItem.make(
+                title: "Grid on Hold ⌥⌘", isOn: self.holdGridEnabled,
+                toolTip: "Hold ⌥⌘ on its own and a grid covers the screen; click or drag across cells"
+            ) { [weak self] on in self?.setHoldGrid(on) })
             sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
         })
     }
@@ -200,19 +282,13 @@ final class App: NSObject, NSApplicationDelegate {
         let di = frontFrame.flatMap { displays.index(for: $0) }
             ?? displays.index(containing: Screens.cursor) ?? 0
         let visible = displays.isEmpty ? CGRect(x: 0, y: 0, width: 1512, height: 945) : displays[di].visibleFrame
-        let grid = LayoutGrid()
 
         let windows = displays.isEmpty ? [] : WindowMap.windows(WindowList.appWindows().map(\.bounds), on: di, of: displays)
-        var active = Set<GridCell>(), others = Set<GridCell>()
-        if let targetFrame { active = grid.cells(coveredBy: targetFrame, in: visible) }
-        for w in windows where w != targetFrame?.intersection(displays[di].frame) {
-            others.formUnion(grid.cells(coveredBy: w, in: visible))
-        }
-        others.subtract(active)
-
-        let model = GridMenuView.Model(grid: grid, visible: visible, activeCells: active, otherCells: others,
+        let clippedTarget = targetFrame.flatMap { displays.isEmpty ? nil : $0.intersection(displays[di].frame) }
+        let model = GridMenuView.Model(visible: visible, activeFrame: targetFrame,
+                                       otherFrames: windows.filter { $0 != clippedTarget },
                                        enabled: menuTarget != nil)
-        return GridMenuView(model: model) { [weak self] selection in
+        return GridMenuView(model: model) { [weak self] grid, selection in
             guard let self, let target = self.menuTarget else { return }
             self.mover.move(target, to: grid.frame(for: selection, in: visible), visible: visible)
         }
@@ -255,9 +331,14 @@ final class App: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension")!)
     }
 
-    @objc private func toggleEdgeSnapping() {
-        edgeSnapping.toggle()
+    private func setEdgeSnapping(_ on: Bool) {
+        edgeSnapping = on
         if edgeSnapping, trusted { snapper.start() } else { snapper.stop() }
+    }
+
+    private func setHoldGrid(_ on: Bool) {
+        holdGridEnabled = on
+        if !holdGridEnabled { apply(holdGrid.dismissed()) }
     }
 
     @objc private func openPrefs() {

@@ -13,12 +13,13 @@ public enum KeyCode {
     public static let rightArrow: CGKeyCode = 124
     public static let downArrow: CGKeyCode = 125
     public static let upArrow: CGKeyCode = 126
-    public static let u: CGKeyCode = 32
-    public static let i: CGKeyCode = 34
-    public static let j: CGKeyCode = 38
-    public static let k: CGKeyCode = 40
+    public static let leftBracket: CGKeyCode = 33
+    public static let rightBracket: CGKeyCode = 30
+    public static let semicolon: CGKeyCode = 41
+    public static let quote: CGKeyCode = 39
     public static let m: CGKeyCode = 46
     public static let c: CGKeyCode = 8
+    public static let n: CGKeyCode = 45
     public static let delete: CGKeyCode = 51
 
     /// Keys macOS flags as "function keys" on every keyboard: the arrows,
@@ -31,22 +32,22 @@ public enum KeyCode {
 public enum BindingStore {
     private static let cmdOpt: Modifiers = [.command, .option]
 
-    /// Nick's defaults: ⌘⌥ + arrows for halves, U I J K for the quarters (the
+    /// Nick's defaults: ⌘⌥ + arrows for halves, [ ] ; ' for the quarters (the
     /// keys sit in the same 2×2 arrangement as the corners), M maximize,
-    /// C center, ⌫ restore, ⌃⌘⌥→ next display.
+    /// C center, ⌫ restore, N next display — every one on ⌘⌥.
     public static let defaults: [Binding] = [
         Binding(token: WindowAction.leftHalf.rawValue, trigger: .key(KeyCode.leftArrow, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.rightHalf.rawValue, trigger: .key(KeyCode.rightArrow, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.topHalf.rawValue, trigger: .key(KeyCode.upArrow, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.bottomHalf.rawValue, trigger: .key(KeyCode.downArrow, cmdOpt), repeatsOnHold: false),
-        Binding(token: WindowAction.topLeft.rawValue, trigger: .key(KeyCode.u, cmdOpt), repeatsOnHold: false),
-        Binding(token: WindowAction.topRight.rawValue, trigger: .key(KeyCode.i, cmdOpt), repeatsOnHold: false),
-        Binding(token: WindowAction.bottomLeft.rawValue, trigger: .key(KeyCode.j, cmdOpt), repeatsOnHold: false),
-        Binding(token: WindowAction.bottomRight.rawValue, trigger: .key(KeyCode.k, cmdOpt), repeatsOnHold: false),
+        Binding(token: WindowAction.topLeft.rawValue, trigger: .key(KeyCode.leftBracket, cmdOpt), repeatsOnHold: false),
+        Binding(token: WindowAction.topRight.rawValue, trigger: .key(KeyCode.rightBracket, cmdOpt), repeatsOnHold: false),
+        Binding(token: WindowAction.bottomLeft.rawValue, trigger: .key(KeyCode.semicolon, cmdOpt), repeatsOnHold: false),
+        Binding(token: WindowAction.bottomRight.rawValue, trigger: .key(KeyCode.quote, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.maximize.rawValue, trigger: .key(KeyCode.m, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.center.rawValue, trigger: .key(KeyCode.c, cmdOpt), repeatsOnHold: false),
         Binding(token: WindowAction.restore.rawValue, trigger: .key(KeyCode.delete, cmdOpt), repeatsOnHold: false),
-        Binding(token: WindowAction.nextDisplay.rawValue, trigger: .key(KeyCode.rightArrow, cmdOpt.union(.control)), repeatsOnHold: false),
+        Binding(token: WindowAction.nextDisplay.rawValue, trigger: .key(KeyCode.n, cmdOpt), repeatsOnHold: false),
     ]
 
     /// Merge user overrides (token → trigger) over the defaults, in action

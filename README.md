@@ -1,11 +1,14 @@
 # Panes
 
-<p align="center"><img src="docs/mascot.png" width="160" alt="Panes's app icon: a small display with windows tiled on it"></p>
+<p align="center"><img src="docs/mascot.png" width="160" alt="Panes's app icon: its menu-bar display, with three windows tiled in quarters and the fourth quarter showing the grid"></p>
+
+<p align="center"><img src="docs/menubar-icon.png" width="480" alt="Panes in the menu bar: an empty display, two halves, two quarters and a half, three free windows, maximized, and greyed without Accessibility"></p>
 
 A standalone macOS menu-bar app that arranges windows: **global shortcuts**
 for halves, quarters, maximize, center, restore and next display; a **4×4
-layout grid** in the menu; and **edge snapping** when you drag a window to a
-display edge. A replacement for Rectangle.
+layout grid** in the menu, and over the whole screen while you hold `⌥⌘`; and
+**edge snapping** when you drag a window to a display edge. A replacement for
+Rectangle.
 
 Its shortcuts are taken by a `CGEventTap` before any app sees them, so an
 app that claims the same keys (iTerm2 and ⌥⌘M, say) cannot get in the way,
@@ -16,7 +19,9 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.1.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 0.3.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
 
 ## Requirements
 
@@ -28,14 +33,17 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 
 | Shortcut (default) | Action |
 |--------------------|--------|
-| `⌥⌘←` / `⌥⌘→` | left / right half |
-| `⌥⌘↑` / `⌥⌘↓` | top / bottom half |
-| `⌥⌘U` / `⌥⌘I` | top-left / top-right quarter |
-| `⌥⌘J` / `⌥⌘K` | bottom-left / bottom-right quarter |
+| `⌥⌘←` / `⌥⌘→` | left / right half; from a top or bottom half or quarter, the quarter on that side (see below) |
+| `⌥⌘↑` / `⌥⌘↓` | top / bottom half; from a left or right half or quarter, the quarter at that end |
+| `⌥⌘[` / `⌥⌘]` | top-left / top-right quarter |
+| `⌥⌘;` / `⌥⌘'` | bottom-left / bottom-right quarter |
 | `⌥⌘M` | maximize (the visible frame: below the menu bar, beside the Dock) |
-| `⌥⌘C` | center, keeping the size |
+| `⌥⌘C` | center at the screen's proportions; press again to step the size up, then down (see below) |
 | `⌥⌘⌫` | restore: undo the last move Panes made to this window (again for the one before) |
-| `⌃⌥⌘→` | move to the next display, keeping the window's relative frame |
+| `⌥⌘N` | move to the next display, keeping the window's relative frame |
+| `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two, when you let go of `⌥⌘` (see below) |
+| hold `⌥⌘` | a 4×4 grid over the screen: click or drag across cells (see below) |
+| hold `⌥⌘⇧` | the same grid in half-cells, 8×8 |
 
 Each acts on the focused window of the frontmost app. A shortcut is
 swallowed only when it applies: with no movable window in front, nothing to
@@ -43,14 +51,94 @@ restore, or a single display for Next Display, the key passes through to the
 app. Rebind any of them in **Settings ▸ Preferences…** (Esc cancels a
 recording; a shortcut shared by two actions is flagged in red).
 
-<p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset"></p>
+### Center, then grow
+
+`⌥⌘C` centres the window, horizontally and vertically, at the screen's own
+proportions. Its sizes are 50%, 66%, 80% and 100% of the visible frame's width
+and height. The first press picks the size closest to the window's current
+one; each further press (while the window is still where the last `⌥⌘C` put
+it) steps one size up until it fills the screen, then back down to 50%, then
+up again, for as long as you keep pressing. Move the window in between (by
+hand or with another Panes action) and the next press starts over.
+
+### Arrows combine
+
+The arrows work like Windows 11's Win + arrows: Panes reads which half or
+quarter the window is in now, and each arrow moves one edge. `⌥⌘←` then `⌥⌘↑`
+is the top-left quarter; from there `⌥⌘→` is top-right and `⌥⌘↓`
+bottom-right. A window that isn't in a half or quarter gets a half: `⌥⌘←`
+the left half, `⌥⌘↑` the top half. Pressing toward the side the window is already
+on widens it back to that half: `⌥⌘→` on the top-right quarter is the right
+half, `⌥⌘↑` on it the top half.
+
+### Cell keys
+
+The grid's 16 cells have keys, row by row from the top-left (no `C`, which
+stays Center):
+
+```
+1 2 3 4
+5 6 7 8
+9 A B D
+E F G H
+```
+
+Hold `⌥⌘`, press a cell's key and let go: the front window fills that cell.
+Press two keys before letting go and it fills the rectangle spanning both, in
+either order (`1` then `8` is the top half, `1` then `H` maximizes); with more
+than two, the first and last count. A translucent preview shows the target
+while `⌥⌘` is held. A chord only starts on a cell key, so `⌥⌘` with an arrow,
+`[` `]` `;` `'`, `M`, `C`, `N` or `⌫` still acts at once (and drops any chord
+in progress), as does any shortcut you rebind onto a cell key. Cell keys are
+taken only while a window is in front to arrange.
+
+**Panes takes over `⌥⌘D`** (macOS: hide or show the Dock) **and `⌥⌘H`**
+(Hide Others) whenever a window is in front. Preferences can move cell keys to
+`⌃⌥`, `⌃⌥⌘` or `⇧⌘` (the last takes over the screenshot shortcuts `⇧⌘3`,
+`⇧⌘4` and `⇧⌘5`).
+
+### Grid on hold ⌥⌘
+
+Hold `⌥⌘` on its own (no other key, no mouse button) for a moment (0.35 s by
+default) and a dark grid fades in over the front window's display. It covers
+exactly the display's visible frame, below the menu bar and beside the Dock,
+so each cell sits over the very area a window filling it would take. The same
+4×4 grid as the menu, with the same cell labels and shading: click a cell, or
+drag across cells, and the front window fills it. The app you were in keeps
+focus throughout.
+
+- Let go of `⌥` or `⌘` and it fades out (a drag in progress is dropped).
+- Press any key while it is up, a cell key or a shortcut included, and it
+  goes at once; the key does what it always does. Panes never takes `Esc`,
+  so `⌥⌘Esc` is still Force Quit.
+- A quick `⌥⌘` shortcut or a cell-key chord never brings it up: any key
+  during the hold cancels it until `⌥⌘` is let go.
+- Hold `⌥⌘⇧` (from the start, or add `⇧` while it is up) for half-cells;
+  drop `⇧` for 4×4 again.
+
+Turn it off in **Settings ▸ Grid on Hold ⌥⌘**; set the delay in Preferences.
+
+![The grid on hold ⌥⌘](docs/overlay.png)
+
+### Half-cells
+
+Hold `⌥⌘⇧` while the menu is open (or on the hold-⌥⌘ grid) and every cell
+splits into its own 2×2, an 8×8 grid of half-cells. Click one, or drag across
+several, to fill that area exactly as with the 4×4 grid; shading follows the
+finer cells. Let go of `⇧` to return to 4×4 (cell-key labels show only there).
+`⌥⌘⇧` on its own is never taken from apps and never starts a chord.
+
+![The menu's grid split into half-cells](docs/menu-fine.png)
+
+<p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset; the cell-key modifier; and how long to hold ⌥⌘ for the grid"></p>
 
 ### The menu
 
-![The open menu](docs/menu.png)
+(Pictured at the top of this page.)
 
 - **The layout grid**: the display the front window is on, cut into 4×4
-  cells at its visible frame's aspect ratio. Click a cell and the window fills
+  cells at its visible frame's aspect ratio, each labelled with its
+  [cell key](#cell-keys) (hold `⌥⌘⇧` for [half-cells](#half-cells)). Click a cell and the window fills
   it; drag across cells and the selection highlights as you go, and the
   window fills it on release (a 2×4 drag from the top-left is the left half).
   Cells under the front window are shaded in the accent colour, cells under
@@ -60,11 +148,13 @@ recording; a shortcut shared by two actions is flagged in red).
   window that was in front when the menu opened. Greyed when they do not
   apply.
 - **⚠ Grant Accessibility…**: shown only until Panes is trusted.
+- **No window to arrange**: shown, greyed, when no movable window is in front.
 - **⚠ macOS Edge Tiling Is On…**: shown when Edge Snapping is on and so is
   macOS's own tiling (`com.apple.WindowManager` `EnableTilingByEdgeDrag` /
   `EnableTopTilingByEdgeDrag`; unset means on). Opens Desktop & Dock.
 - **Settings ▸** (StatusItemKit's `SettingsMenu`)
   - **Edge Snapping**: on by default.
+  - **Grid on Hold ⌥⌘**: on by default; see [below](#grid-on-hold-).
   - **Preferences…** (⌘,): rebind the shortcuts.
   - **Start at Login**, then the version.
 - **Quit Panes** (⌘Q).
@@ -91,27 +181,24 @@ its target hugged, so a too-wide right half stays flush right.
 
 ## The menu-bar icon
 
-![The menu-bar icon](docs/menubar-icon.png)
-
 A little display in the Menumon glyph style (shaded bezel on a stand, dark
 glass, ink outlines), shaped like the display the icon sits on, with a faint
 4×4 grid. Every window on that display is drawn on it as a small tile at its
 true scaled position and size, whether or not it fits the grid, back to front
 with outlines so overlaps read; the frontmost window is amber, the others
-soft blues, greens and lilacs. Shown above on a dark and a light bar, empty,
-with two halves, three tiles, three free windows (one hanging off the edge)
-and maximized. The glass greys out while Accessibility is not granted.
+soft blues, greens and lilacs. Shown above: empty, two halves, two quarters
+and a half, three free windows (one hanging off the edge), maximized, and
+greyed out, as the glass goes while Accessibility is not granted.
 
 The window list comes from `CGWindowListCopyWindowInfo` (bounds only, which
 needs neither Accessibility nor Screen Recording). The icon redraws when an
 app activates, the Space or the displays change, after Panes moves a window,
 and on a 1.5 s poll that redraws only when the bounds list has changed.
 
-## Character
-
-TODO (Nick): Panes has no mascot yet; the icon is a plain screen grid for
-now. When one is chosen, add it to StatusItemKit's `CharacterIcon` and
-`MinuteCue.order` like the others, and replace `docs/mascot.png`.
+Panes has no character, and so no minute animation: its glyph is the
+picture. The app icon is that glyph drawn large on the dark tile every
+Menumon app shares, three quarters tiled and the fourth empty so the grid
+shows.
 
 ## How it works
 
@@ -121,6 +208,12 @@ now. When one is chosen, add it to StatusItemKit's `CharacterIcon` and
   without fn. While Preferences records a shortcut, the tap lets keys through
   to the recorder. The tap is re-created every 6 s to stay ahead of taps other
   apps add later.
+- **Cell keys** need a second tap of Panes's own (`ChordTap`): a chord ends
+  when the modifiers are *released*, and HotkeyKit's tap never sees
+  `flagsChanged`. The same tap feeds the hold-⌥⌘ grid (`HoldGrid` in
+  PanesCore decides when it shows and goes; the grid view is shared with the
+  menu). It swallows only cell-key presses (and their key-ups) made
+  with exactly the chord modifiers; `ChordLogic` in PanesCore decides.
 - **Accessibility** (`AXUIElement`) reads and sets the focused window's
   position and size (messaging timeout 0.3 s, so a hung app cannot stall the
   tap). Only standard windows and dialogs whose position is settable, not
@@ -137,7 +230,7 @@ now. When one is chosen, add it to StatusItemKit's `CharacterIcon` and
   without changing size, which tells a title-bar drag from a resize or a drag
   inside the content.
 - **PanesCore** holds the testable logic: frames for every action on any
-  display layout, the relative move between displays, the fit-after-refusal
+  display layout, center-and-grow steps, cell-key chords, the relative move between displays, the fit-after-refusal
   nudge, snap zones, restore history, the grid, the frame interpolation and
   pacing, the icon's window mapping and pixel alignment, bindings and their
   formatting. **PanesGlyph** draws the icon, shared by the app and
@@ -193,8 +286,15 @@ menu warns while it is on).
 ```sh
 swift build                    # compile
 swift test                     # PanesCore unit tests
-swift run panes-render-icons   # docs/menubar-icon.png, docs/mascot.png, Resources/bundle/AppIcon.icns
+scripts/make-icon.sh           # Resources/bundle/AppIcon.icns and docs/mascot.png
 ```
+
+Every Menumon app's pictures are rendered from its own drawing code by the
+[Menumon site](https://github.com/nicholaspsmith/widgets.nicksmith.software)'s
+`art/glyphs`, which compiles `PanesGlyph` with the PanesCore types it needs.
+`scripts/make-icon.sh` runs its `app-icons.sh` for Panes alone (needs that repo
+and StatusItemKit checked out beside this one); its `render-glyphs.sh` draws
+`docs/menubar-icon.png` along with every other app's strip.
 
 ## Releasing
 

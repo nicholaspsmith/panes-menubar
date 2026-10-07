@@ -56,6 +56,40 @@ struct PreferencesView: View {
                 }
             }
             Divider()
+            Text("Cell Keys").font(.headline)
+            HStack(spacing: 10) {
+                Picker("Hold", selection: $model.chordModifier) {
+                    ForEach(ChordModifier.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
+                .frame(width: 150)
+                Text("+ 1–8, 9, A, B, D–H, then let go")
+                    .foregroundColor(.secondary)
+            }
+            if let warning = model.chordModifier.warning {
+                Text(warning).font(.caption).foregroundColor(.secondary)
+            }
+            Text("One key fills that cell of the grid; two keys fill the rectangle between them "
+                 + "(1 then 8 is the top half). Cells are 1 2 3 4 / 5 6 7 8 / 9 A B D / E F G H; C stays Center. "
+                 + "Hold ⌥⌘⇧ in the menu or on the overlay for half-cells.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Divider()
+            Text("Grid on Hold ⌥⌘").font(.headline)
+            HStack(spacing: 10) {
+                Text("Appears after")
+                Slider(value: $model.holdDelay, in: HoldGrid.delayRange, step: 0.05)
+                    .frame(width: 180)
+                Text(String(format: "%.2f s", model.holdDelay))
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundColor(.secondary)
+            }
+            Text("Hold ⌥⌘ on its own and a grid covers the screen: click a cell or drag across cells. "
+                 + "Add ⇧ for half-cells. Turn it off in Settings ▸ Grid on Hold ⌥⌘.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Divider()
             HStack(alignment: .top) {
                 Text("Panes takes these keys before any app sees them, but only when there is a window to act on; "
                      + "otherwise they pass through. Press Esc while recording to cancel.")
