@@ -46,6 +46,9 @@ struct AXWindow {
         return window.isMovable ? window : nil
     }
 
+    /// Processes that draw Mission Control / Exposé / Launchpad.
+    static let systemUIOwners: Set<String> = ["com.apple.WindowManager", "com.apple.dock"]
+
     /// The window under a screen point (AX coordinates), for edge snapping.
     static func at(_ point: CGPoint) -> AXWindow? {
         let system = AXUIElementCreateSystemWide()
@@ -53,6 +56,14 @@ struct AXWindow {
         var hit: AXUIElement?
         guard AXUIElementCopyElementAtPosition(system, Float(point.x), Float(point.y), &hit) == .success,
               var element = hit else { return nil }
+        // Mission Control, App Exposé and Launchpad are system UI: a press there
+        // lands on an element of WindowManager (macOS 26+) or the Dock (older),
+        // never on the app's own window, even though that window is what's
+        // pictured under the pointer. Never treat those as a window drag.
+        var hitPid: pid_t = 0
+        AXUIElementGetPid(element, &hitPid)
+        if let owner = NSRunningApplication(processIdentifier: hitPid)?.bundleIdentifier,
+           Self.systemUIOwners.contains(owner) { return nil }
         // Climb to the window: its own AXWindow attribute, else parent by parent.
         for _ in 0..<12 {
             if role(of: element) == kAXWindowRole as String { break }
