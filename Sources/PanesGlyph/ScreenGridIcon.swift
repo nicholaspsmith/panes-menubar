@@ -70,13 +70,49 @@ public enum ScreenGridIcon {
         return CGSize(width: (screenHeight * aspect).rounded(), height: screenHeight)
     }
 
+    // MARK: Once-a-minute slide
+
+    /// How long the glyph's once-a-minute animation lasts: the windows start
+    /// bunched in a loose cascade at the middle of the screen and slide out
+    /// into their tiles, the front one glowing as it lands and fading back.
+    public static let tileDuration: TimeInterval = 1.0
+    /// When every window has reached its tile and the front one lands.
+    public static let tileLanding: TimeInterval = 0.6
+
+    /// How far the windows have slid `t` seconds in, 0 bunched … 1 in place.
+    public static func tileSettle(at t: TimeInterval) -> CGFloat {
+        let x = min(max(t / tileLanding, 0), 1)
+        return CGFloat(x * x * (3 - 2 * x))
+    }
+
+    /// How brightly the front tile glows `t` seconds in: full as it lands,
+    /// fading to nothing by the end.
+    public static func frontGlow(at t: TimeInterval) -> CGFloat {
+        guard t >= tileLanding, t < tileDuration else { return 0 }
+        let x = (t - tileLanding) / (tileDuration - tileLanding)
+        return CGFloat((1 - x) * (1 - x))
+    }
+
+    struct Slide {
+        let settle: CGFloat
+        let glow: CGFloat
+        static let rest = Slide(settle: 1, glow: 0)
+        init(settle: CGFloat, glow: CGFloat) { self.settle = settle; self.glow = glow }
+        init(at t: TimeInterval?) {
+            guard let t else { self = .rest; return }
+            self.init(settle: tileSettle(at: t), glow: frontGlow(at: t))
+        }
+    }
+
     // MARK: Drawing
 
-    public static func image(_ model: Model) -> NSImage {
+    /// - Parameter tiling: seconds into the once-a-minute slide (0 …
+    ///   `tileDuration`), or nil for the windows sitting in their tiles.
+    public static func image(_ model: Model, tiling: TimeInterval? = nil) -> NSImage {
         let w = width(for: model.display.size)
         let image = NSImage(size: NSSize(width: w, height: height), flipped: false) { rect in
             let scale = NSGraphicsContext.current?.cgContext.userSpaceToDeviceSpaceTransform.a ?? 2
-            draw(model, in: rect, scale: max(1, scale))
+            draw(model, in: rect, scale: max(1, scale), tiling: tiling)
             return true
         }
         image.isTemplate = false
@@ -85,7 +121,7 @@ public enum ScreenGridIcon {
 
     /// Draws into the current context at any size: the design is 22pt tall,
     /// scaled to fit `rect` (the app icon draws it large).
-    public static func draw(_ model: Model, in rect: NSRect, scale: CGFloat) {
+    public static func draw(_ model: Model, in rect: NSRect, scale: CGFloat, tiling: TimeInterval? = nil) {
         let w = width(for: model.display.size)
         let k = min(rect.width / w, rect.height / height)
         NSGraphicsContext.saveGraphicsState()
@@ -93,11 +129,24 @@ public enum ScreenGridIcon {
         t.translateX(by: rect.midX - w * k / 2, yBy: rect.midY - height * k / 2)
         t.scale(by: k)
         t.concat()
-        drawDesign(model, width: w, pixelScale: scale * k)
+        drawDesign(model, width: w, pixelScale: scale * k, slide: Slide(at: tiling))
         NSGraphicsContext.restoreGraphicsState()
     }
 
-    private static func drawDesign(_ m: Model, width w: CGFloat, pixelScale px: CGFloat) {
+    /// Where the windows start the slide: each a little over half its size,
+    /// stacked in a cascade stepping down and right towards the front one.
+    static func bunched(_ tiles: [CGRect], in screen: CGRect) -> [CGRect] {
+        let n = CGFloat(tiles.count)
+        return tiles.enumerated().map { i, r in
+            let step = CGFloat(i) - (n - 1) / 2
+            let size = CGSize(width: r.width * 0.55, height: r.height * 0.55)
+            return CGRect(x: screen.midX + step * 1.6 - size.width / 2,
+                          y: screen.midY - step * 1.2 - size.height / 2,
+                          width: size.width, height: size.height)
+        }
+    }
+
+    private static func drawDesign(_ m: Model, width w: CGFloat, pixelScale px: CGFloat, slide: Slide) {
         let screenSz = screenSize(for: m.display.size)
         let screen = WindowMap.pixelAligned(
             CGRect(x: (w - screenSz.width) / 2, y: 4.4, width: screenSz.width, height: screenSz.height), scale: px)
@@ -135,11 +184,23 @@ public enum ScreenGridIcon {
         grid.lineWidth = hair
         NSColor(white: 1, alpha: 0.16).set(); grid.stroke()
 
-        // Windows, back to front.
-        let tiles = WindowMap.scaled(m.windows, display: m.display, into: screen, scale: px)
+        // Windows, back to front; mid-slide, each between where it starts and its tile.
+        var tiles = WindowMap.scaled(m.windows, display: m.display, into: screen, scale: px)
+        if slide.settle < 1 {
+            let k = slide.settle
+            tiles = zip(bunched(tiles, in: screen), tiles).map { a, b in
+                WindowMap.pixelAligned(CGRect(x: a.minX + (b.minX - a.minX) * k, y: a.minY + (b.minY - a.minY) * k,
+                                              width: a.width + (b.width - a.width) * k, height: a.height + (b.height - a.height) * k),
+                                       scale: px)
+            }
+        }
         for (i, tile) in tiles.enumerated() {
             let isFront = i == tiles.count - 1
-            let colors = isFront ? front : others[(tiles.count - 2 - i) % others.count]
+            var colors = isFront ? front : others[(tiles.count - 2 - i) % others.count]
+            if isFront, slide.glow > 0 {
+                colors = (colors.light.blended(withFraction: 0.6 * slide.glow, of: .white) ?? colors.light,
+                          colors.dark.blended(withFraction: 0.5 * slide.glow, of: .white) ?? colors.dark)
+            }
             drawTile(tile, colors, pixel: hair, faded: !m.active)
         }
 

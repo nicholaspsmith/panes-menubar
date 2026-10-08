@@ -38,6 +38,9 @@ final class App: NSObject, NSApplicationDelegate {
     private var trustTimer: Timer?
     private var pollCount = 0
     private var iconSignature: Int?
+    /// Panes's turn in the minute cue: the windows slide into their tiles.
+    private var minuteCue: MinuteCue!
+    private var slide: IconAnimation?
     /// The window the open menu acts on, captured as it opens: the menu does
     /// not activate Panes, so the frontmost app is still the user's.
     private var menuTarget: AXWindow?
@@ -96,6 +99,8 @@ final class App: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { [weak self] _ in self?.refreshIcon(force: true) }
         refreshIcon(force: true)
+        minuteCue = MinuteCue { [weak self] in self?.slideTiles() }
+        minuteCue.start()
     }
 
     // MARK: - Tap lifecycle
@@ -203,8 +208,22 @@ final class App: NSObject, NSApplicationDelegate {
         return ScreenGridIcon.Model(display: frame, windows: windows, active: trusted)
     }
 
+    /// The once-a-minute animation: the display's windows, as they are now,
+    /// bunch up and slide out into their tiles. Nothing to slide on an empty
+    /// display, and the poll leaves the icon alone until the slide is done.
+    private func slideTiles() {
+        guard let status, slide?.isRunning != true else { return }
+        let m = iconModel()
+        guard !m.windows.isEmpty else { return }
+        let anim = IconAnimation(duration: ScreenGridIcon.tileDuration, frame: { t in
+            status.setIcon(ScreenGridIcon.image(m, tiling: t))
+        }, completion: { [weak self] in self?.refreshIcon(force: true) })
+        slide = anim
+        anim.start()
+    }
+
     private func refreshIcon(force: Bool = false) {
-        guard let status else { return }
+        guard let status, slide?.isRunning != true else { return }
         let m = iconModel()
         var sig = Hasher()
         sig.combine(WindowMap.signature(m.windows + [m.display]))

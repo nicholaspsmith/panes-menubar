@@ -195,10 +195,14 @@ needs neither Accessibility nor Screen Recording). The icon redraws when an
 app activates, the Space or the displays change, after Panes moves a window,
 and on a 1.5 s poll that redraws only when the bounds list has changed.
 
-Panes has no character, and so no minute animation: its glyph is the
-picture. The app icon is that glyph drawn large on the dark tile every
-Menumon app shares, three quarters tiled and the fourth empty so the grid
-shows.
+<p align="center"><img src="docs/animation.png" alt="The windows on Panes's display bunching up in the middle and sliding out into their tiles, the front one glowing as it lands"></p>
+
+Panes has no character, but its glyph still takes a turn in the Menumon
+minute cue (StatusItemKit's `MinuteCue`): twice a minute the windows on the
+display bunch up in the middle and slide out into their tiles, the front one
+glowing as it lands. Not under Reduce Motion, and not on an empty display.
+The app icon is the glyph drawn large on the dark tile every Menumon app
+shares, three quarters tiled and the fourth empty so the grid shows.
 
 ## How it works
 
