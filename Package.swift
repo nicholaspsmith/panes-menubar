@@ -37,5 +37,6 @@ let package = Package(
             ]
         ),
         .testTarget(name: "PanesCoreTests", dependencies: ["PanesCore"]),
+        .testTarget(name: "PanesGlyphTests", dependencies: ["PanesGlyph"]),
     ]
 )

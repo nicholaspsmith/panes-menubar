@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.5.0] - 2026-10-08
+
+- The icon animates like the other Menumon glyphs: twice a minute the windows on the display bunch up in the middle and slide out into their tiles, the front one glowing as it lands, taking Panes's turn in the cue after Menu Crane. Skipped under Reduce Motion and on an empty display
+
 ## [0.4.0] - 2026-10-07
 
 - No user-visible changes.
