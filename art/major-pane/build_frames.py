@@ -16,7 +16,7 @@ grid coordinates, and a pose is the parts composed with a few whole-row moves
 import json
 import os
 
-W, H = 30, 22
+W, H = 20, 22
 
 PALETTE = {
     "K": "#1E1A24",  # outline
@@ -67,68 +67,73 @@ def lean(G, below, dx):
 
 
 # ------------------------------------------------------------------ parts
-# He stands at x 2…18 facing the viewer's left (the smirk and the glints sit
-# left of centre); the pane hangs from his right hand (viewer's right) at x 19…28.
+# He holds the pane in front of him like a riot shield: the head shows above
+# it (x 5…14, facing the viewer's left: smirk and glints left of centre), the
+# boots below, and a fist grips each side edge. Canvas 20x22; the pane is
+# 14x12 at x 3…16 with a 12x10 field of cells.
 
 HAIR = {0: [(7, "KKKKKKKK")], 1: [(6, "KYYYYYYYYK")], 2: [(5, "KYYYYYYYYYK")]}
 HEAD = {3: [(5, "KSSSSSSSSSK")],
         4: [(5, "KGGGGGGGGGK")],          # shades, one wraparound band
-        5: [(5, "KGGGGGGGGGK")],
-        6: [(5, "KSSSSSSSSsK")],
-        7: [(5, "KSKKKSSSSsK")],          # the smirk, left of centre
-        8: [(5, "KSSSSSSSSsK")],          # the jaw stays full width
-        9: [(6, "KKKKKKKKK")],            # chin: square with a one-pixel chamfer
-        10: [(8, "KsssK")]}               # neck
-GLINT = {4: [(7, "W"), (12, "W")]}          # a glint on each lens
-GLINT_LEFT = {4: [(6, "W"), (11, "W")]}     # the stare: glints slide to the front
-MOUTH_OPEN = {7: [(6, "SKKKKSSSsK")], 8: [(6, "SKKKKSSSsK")]}
+        5: [(5, "KSSSSSSSSsK")],
+        6: [(5, "KSKKKSSSSsK")],          # the smirk, left of centre
+        7: [(5, "KSSSSSSSSsK")],          # the jaw, behind the pane's top edge
+        8: [(6, "KsssssssK")]}            # neck and shoulders, seen only when the pane drops
+GLINT = {4: [(7, "W"), (12, "W")]}
+GLINT_LEFT = {4: [(6, "W"), (11, "W")]}
+MOUTH_OPEN = {6: [(6, "SKKKKSSSsK")], 7: [(6, "SKKKKSSSsK")]}
 BANG = {0: [(2, "W")], 1: [(2, "W")], 2: [(2, "W")], 4: [(2, "W")]}          # the "!" of the bark
 
-TORSO = {11: [(4, "KKTTTTTTTTTKK")],
-         12: [(2, "KSSKTTTTTTTTTKSSK")],
-         13: [(2, "KSSKTTTTTTTTtKSSK")],
-         14: [(2, "KSSKTTTTTTTttKSSK")],
-         15: [(2, "KSsKMMMYMMMKKSsK")],   # belt with a brass buckle
-         16: [(2, "KssKOOOOOOOOOKssK")]}  # fists either side of the waistband
-LEGS = {17: [(6, "KOOOKOOOK")], 18: [(6, "KOOOKOOOK")], 19: [(6, "KOoOKOoOK")],
-        20: [(5, "KMMMMKMMMMK")], 21: [(5, "KKKKKKKKKKK")]}
-LEGS_APART = {17: [(4, "KOOOK.KOOOK")], 18: [(4, "KOOOK.KOOOK")], 19: [(4, "KOoOK.KOoOK")],
-              20: [(3, "KMMMMK.KMMMMK")], 21: [(3, "KKKKKK.KKKKKK")]}
-
-# the free (viewer's left) arm: lowered is part of TORSO; these replace it
-_CLEAR_ARM = {y: [(2, "...")] for y in range(12, 17)}
-ARM_UP = dict(_CLEAR_ARM)
-ARM_UP.update({4: [(0, "KSSSK")], 5: [(0, "KSSSK")], 6: [(1, "KSSK")], 7: [(1, "KSSK")], 8: [(1, "KSSK")],
-               9: [(1, "KSSK")], 10: [(1, "KSSK")], 11: [(1, "KSSKK")], 12: [(2, "KKK")]})
-ARM_HALF = dict(_CLEAR_ARM)
-ARM_HALF.update({9: [(0, "KSSSK")], 10: [(0, "KSSSK")], 11: [(1, "KSSKK")], 12: [(2, "KKK")]})
+LEGS = {19: [(5, "KOOOKOOOK")], 20: [(4, "KMMMMKMMMMK")], 21: [(4, "KKKKKKKKKKK")]}
+LEGS_APART = {20: [(3, "KMMMMK.KMMMMK")], 21: [(3, "KKKKKK.KKKKKK")]}
 
 
-def pane(y0, x0=19):
-    """A 10x10 window: a one-pixel frame round an 8x8 of cells, a highlight top left."""
-    rows = {y0: [(x0, "KKKKKKKKKK")], y0 + 9: [(x0, "KKKKKKKKKK")]}
-    for y in range(y0 + 1, y0 + 9):
-        rows[y] = [(x0, "K" + "p" * 8 + "K")]
-    rows[y0 + 1] = [(x0, "KW" + "p" * 7 + "K")]
+def pane(y0, x0=3):
+    """The shield: a one-pixel frame round a 12x10 field of cells, a highlight top left."""
+    rows = {y0: [(x0, "K" * 14)], y0 + 11: [(x0, "K" * 14)]}
+    for y in range(y0 + 1, y0 + 11):
+        rows[y] = [(x0, "K" + "p" * 12 + "K")]
+    rows[y0 + 1] = [(x0, "KW" + "p" * 11 + "K")]
     return rows
 
 
-def figure(arm=None, mouth_open=False, bang=False, glint=GLINT, pane_y=9, legs=LEGS, breath=0, push=0):
+def right_fist(y0):
+    """His right fist (viewer's right) wrapped round the pane's edge, the thumb over its face."""
+    return {y0: [(16, "KKK")], y0 + 1: [(15, "KSSSK")], y0 + 2: [(15, "KSSsK")], y0 + 3: [(16, "KsK")]}
+
+
+def fists(y0):
+    """Both fists gripping the pane's side edges, four rows tall."""
+    f = right_fist(y0)
+    f[y0].append((1, "KKK")); f[y0 + 1].append((0, "KSSSK")); f[y0 + 2].append((0, "KSSsK")); f[y0 + 3].append((1, "KsK"))
+    return f
+
+
+# the free (viewer's left) hand leaves the pane and comes up to the shades
+ARM_UP = {3: [(0, "KSSSK")], 4: [(0, "KSSSK")], 5: [(1, "KSSK")], 6: [(1, "KSSK")], 7: [(1, "KSSK")],
+          8: [(1, "KSSK")], 9: [(1, "KSSK")], 10: [(1, "KSSK")], 11: [(1, "KKKK")]}
+ARM_HALF = {8: [(0, "KSSSK")], 9: [(0, "KSSSK")], 10: [(1, "KSSK")], 11: [(1, "KKKK")]}
+
+
+def figure(arm=None, mouth_open=False, bang=False, glint=GLINT, pane_y=7, legs=LEGS, breath=0, push=0):
     g = blank()
-    for part in (HAIR, HEAD, TORSO, legs):
+    for part in (HAIR, HEAD, legs):
         put(g, part)
     put(g, glint)
     if mouth_open:
         put(g, MOUTH_OPEN)
-    if arm:
-        put(g, arm)
     if push:
-        lean(g, 11, push)               # head and shoulders forward
+        lean(g, 9, push)                # the head pushes forward
+    if breath:
+        squash(g, 8, breath)            # the head settles a row towards the shield
     if bang:
         put(g, BANG)
     put(g, pane(pane_y))
-    if breath:
-        squash(g, 11, breath)           # the chest rises: the head sinks a row into the shoulders
+    if arm:
+        put(g, right_fist(pane_y + 4))
+        put(g, arm)
+    else:
+        put(g, fists(pane_y + 4))
     return ["".join(r) for r in g]
 
 
@@ -143,7 +148,7 @@ STATES = {
         figure(mouth_open=True, bang=True, push=-1), figure(mouth_open=True, bang=True, push=-1),
         figure(mouth_open=True, push=-1), figure(mouth_open=True, bang=True, push=-1), figure(), figure()]},
     "at_ease": {"fps": 2, "loop": True, "frames": [
-        figure(pane_y=12, legs=LEGS_APART), figure(pane_y=12, legs=LEGS_APART, breath=1)]},
+        figure(pane_y=8, legs=LEGS_APART), figure(pane_y=8, legs=LEGS_APART, breath=1)]},
 }
 
 
