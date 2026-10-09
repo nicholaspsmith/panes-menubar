@@ -103,17 +103,19 @@ Files, mirroring Parity:
   luminance (Rec. 601) when inactive. `bitmap(art:pose:scale:)` writes each
   art pixel as a whole block of `scale` device pixels, nothing interpolated;
   `image(art:pose:)` wraps the 1x and 2x bitmaps as an `NSImage` of
-  `width` x `height` points. `iconBitmap(size:)` is `idle` frame 0 (pane with
-  four cells lit, a quarter) cropped to the figure and upscaled
-  nearest-neighbour onto Menumon's dark tile.
+  `width` x `height` points. The app icon is rendered by the site's
+  `app-icons.swift` from `image(art:pose:scales:)` with a large scale and no
+  interpolation (its `pixelArt` flag); PanesGlyph has no icon drawing of its
+  own.
 - `Animator.frame(elapsed:timing:)` and `nextChange(elapsed:timing:)`, pure,
   as in Parity's `Motion.swift`: the frame index for a clip at a time, and
   when it next changes. A one-shot holds its last frame and reports `done`.
 - `MajorPanePreview.html(art:)`: the review-gate page, every present clip
-  animating at 1x on a light and a dark bar and 8x enlarged, with a selector
-  for the pane's lit cells (none, quarter, half, all) and the app icon.
+  animating at 1x on a light and a dark bar and 8x enlarged, a row of idle
+  frame 0 with none, a quarter, a half and all cells lit, and the icon pose at
+  32x on a dark CSS tile.
 - A new `MajorPaneRender` executable target (`swift run major-pane-render`):
-  `preview OUT.html [--frames F]` and `icon OUT.png [SIZE] [--frames F]`.
+  `preview OUT.html [--frames F]`.
   The README's mention of `panes-render-icons` (the site's renderer, which
   lives in widgets.nicksmith.software) stays as it is.
 
