@@ -1,8 +1,8 @@
 # Panes
 
-<p align="center"><img src="docs/mascot.png" width="160" alt="Panes's app icon: its menu-bar display, with three windows tiled in quarters and the fourth quarter showing the grid"></p>
+<p align="center"><img src="docs/mascot.png" width="160" alt="Panes's app icon: Major Pane at attention behind his pane, a quarter of it lit"></p>
 
-<p align="center"><img src="docs/menubar-icon.png" width="480" alt="Panes in the menu bar: an empty display, two halves, two quarters and a half, three free windows, maximized, and greyed without Accessibility"></p>
+<p align="center"><img src="docs/menubar-icon.png" width="480" alt="Major Pane in the menu bar: at attention with his pane unlit, a quarter lit, a half lit and all of it lit, at ease and greyed without Accessibility, then the screen-grid icon"></p>
 
 A standalone macOS menu-bar app that arranges windows: **global shortcuts**
 for halves, quarters, maximize, center, restore and next display; a **4×4
@@ -19,7 +19,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.3.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 0.8.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
 
@@ -179,30 +179,43 @@ size, position, size, then a re-read: a window that refuses the size (a
 minimum width, a terminal snapping to cells) is nudged back against the edges
 its target hugged, so a too-wide right half stays flush right.
 
-## The menu-bar icon
+## Major Pane
 
-A little display in the Menumon glyph style (shaded bezel on a stand, dark
-glass, ink outlines), shaped like the display the icon sits on, with a faint
-4×4 grid. Every window on that display is drawn on it as a small tile at its
+Panes's mascot is **Major Pane**, a commander of windows: blond flat-top,
+square jaw, dark shades, chest out, holding his pane in front of him like a
+riot shield, a fist round each edge. He is pixel art, hand-placed on a 22×22
+grid with twenty colours, drawn in whole pixels at the bar's backing scale so
+nothing is ever blurred. The pane is a 4×4 window grid, and its cells light to
+show where the front window sits: eight for a half, four for a quarter, all
+sixteen when it is maximized, none when it floats free or there is no window.
+
+He stands at attention (a slow breath, a glint on the shades) and, in Panes's
+turn in the Menumon minute cue, snaps a salute. When Panes moves a window he
+barks the order and the pane relights to its new tile. Without Accessibility
+he stands at ease, pane lowered, greyed out. Under Reduce Motion he holds
+still. **Settings ▸ Icon** swaps him for the screen-grid glyph below.
+
+**The screen grid**, the alternate icon, is a little display in the Menumon
+glyph style (shaded bezel on a stand, dark glass, ink outlines), shaped like
+the display the icon sits on, with a faint 4×4 grid. Every window on that display is drawn on it as a small tile at its
 true scaled position and size, whether or not it fits the grid, back to front
 with outlines so overlaps read; the frontmost window is amber, the others
-soft blues, greens and lilacs. Shown above: empty, two halves, two quarters
-and a half, three free windows (one hanging off the edge), maximized, and
-greyed out, as the glass goes while Accessibility is not granted.
+soft blues, greens and lilacs. It greys out, like
+Major Pane, while Accessibility is not granted.
 
 The window list comes from `CGWindowListCopyWindowInfo` (bounds only, which
 needs neither Accessibility nor Screen Recording). The icon redraws when an
 app activates, the Space or the displays change, after Panes moves a window,
 and on a 1.5 s poll that redraws only when the bounds list has changed.
 
-<p align="center"><img src="docs/animation.png" alt="The windows on Panes's display bunching up in the middle and sliding out into their tiles, the front one glowing as it lands"></p>
+<p align="center"><img src="docs/animation.png" alt="Major Pane barking an order, the pane lighting the half and then the quarter where the window landed"></p>
 
-Panes has no character, but its glyph still takes a turn in the Menumon
-minute cue (StatusItemKit's `MinuteCue`): twice a minute the windows on the
-display bunch up in the middle and slide out into their tiles, the front one
-glowing as it lands. Not under Reduce Motion, and not on an empty display.
-The app icon is the glyph drawn large on the dark tile every Menumon app
-shares, three quarters tiled and the fourth empty so the grid shows.
+When the grid is the chosen icon it takes Panes's turn in the Menumon minute
+cue (StatusItemKit's `MinuteCue`) instead of the salute: twice a minute the
+windows on the display bunch up in the middle and slide out into their tiles,
+the front one glowing as it lands. Not under Reduce Motion, and not on an
+empty display. The app icon is Major Pane drawn large on the dark tile every
+Menumon app shares.
 
 ## How it works
 
@@ -291,7 +304,15 @@ menu warns while it is on).
 swift build                    # compile
 swift test                     # PanesCore unit tests
 scripts/make-icon.sh           # Resources/bundle/AppIcon.icns and docs/mascot.png
+python3 art/major-pane/build_frames.py && python3 art/major-pane/render.py   # the art → frames.json, review renders in art/major-pane/out/
+scripts/gen_major_pane_frames.py art/major-pane/frames.json                 # → Sources/PanesGlyph/MajorPaneFrames.swift (a test fails if stale)
+swift run major-pane-render preview out.html [--frames FILE]                 # every clip animating, the review page
 ```
+
+Major Pane is drawn in `art/major-pane/build_frames.py`, every pixel in code;
+`render.py` makes contact sheets and an animated sheet to check it, and the
+generator compiles it into Swift. The concept sketches in `art/mascot/` are
+guide only.
 
 Every Menumon app's pictures are rendered from its own drawing code by the
 [Menumon site](https://github.com/nicholaspsmith/widgets.nicksmith.software)'s
@@ -364,3 +385,7 @@ Copyright (c) 2026 Nicholas Smith. Licensed under the
 redistribute this software, including inside proprietary products, provided
 the copyright notice and license stay on these files and any modified
 versions of them are made available under the same license.
+
+The Major Pane artwork (`art/`, the generated frames, the icon and the
+pictures in `docs/`) is [CC BY-NC 4.0](art/LICENSE): see [NOTICE](NOTICE). It
+may not be used commercially.
