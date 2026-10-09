@@ -42,8 +42,8 @@ what makes him Panes's: its cells light to show where the front window sits.
 | Accessibility granted | `idle` | loops, about 4 fps: a slow breath, an occasional blink, a hard stare to the left |
 | Panes's minute-cue slot (`MinuteCue`, :00 and :30) | `salute` | once: a snapped salute with the free hand, back to idle |
 | A window was moved by Panes (`mover.onMoved`) | `bark` | once: mouth open, a small "!" burst; the pane relights to the window's new tile |
-| No Accessibility (`active == false`) | `at_ease` | loops or holds: feet apart, pane lowered to the ground; the whole glyph greyed by luminance |
-| Reduce Motion | `idle` frame 0 (or `at_ease` frame 0) | static |
+| No Accessibility (`active == false`) | `at_ease` | loops, about 2 fps: feet apart, pane lowered to the ground, a slow sway; the whole glyph greyed by luminance |
+| Reduce Motion | frame 0 of the steady pose (`idle`, or `at_ease` without Accessibility) | static |
 
 A one-shot never interrupts another: a cue that lands during a bark is
 skipped, a move during a salute relights the pane but the bark waits for the
@@ -112,9 +112,10 @@ Files, mirroring Parity:
 - `MajorPanePreview.html(art:)`: the review-gate page, every present clip
   animating at 1x on a light and a dark bar and 8x enlarged, with a selector
   for the pane's lit cells (none, quarter, half, all) and the app icon.
-- `panes-render-icons` (existing executable in `scripts/`? else a new
-  `MajorPaneRender` target): `preview OUT.html [--frames F]` and
-  `icon OUT.png [SIZE]`.
+- A new `MajorPaneRender` executable target (`swift run major-pane-render`):
+  `preview OUT.html [--frames F]` and `icon OUT.png [SIZE] [--frames F]`.
+  The README's mention of `panes-render-icons` (the site's renderer, which
+  lives in widgets.nicksmith.software) stays as it is.
 
 Tests (PanesGlyphTests): the pixel map of a hand-built 6x4 art renders to
 exactly its palette colours; pane cells take lit/unlit by `lit`; inactive
