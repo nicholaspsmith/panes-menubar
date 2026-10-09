@@ -14,7 +14,7 @@
 Format (spec "Art format"): {"width", "height", "palette": {char: "#RRGGBB"},
 "pane": {char: "cell"}, "states": {name: {"fps", "loop", "frames": [[rows]]}}}.
 Exactly those five keys. "." is transparent; pane characters are the cells the
-renderer lights. At most 12 palette colours. States: exactly idle, salute, bark,
+renderer lights. At most 24 palette colours. States: exactly idle, salute, bark,
 at_ease. Canvas 1 to 64 each way. Python 3.9, stdlib only."""
 from __future__ import annotations
 import hashlib
@@ -28,7 +28,7 @@ OUT = REPO / "Sources/PanesGlyph/MajorPaneFrames.swift"
 STATES = ("idle", "salute", "bark", "at_ease")
 PANE_ROLES = ("cell",)
 TOP_KEYS = ("width", "height", "palette", "pane", "states")
-MAX_COLOURS = 12
+MAX_COLOURS = 24
 HEX = re.compile(r"#[0-9A-Fa-f]{6}")
 
 

@@ -27,7 +27,7 @@ public struct MajorPaneArt: Equatable {
     /// The four clips every art must draw, and no others.
     public static let stateNames = ["idle", "salute", "bark", "at_ease"]
     /// Palette entries, "." (transparent) not counted.
-    public static let maxColours = 12
+    public static let maxColours = 24
     static let topLevelKeys: Set<String> = ["width", "height", "palette", "pane", "states"]
 
     public static let shipped = MajorPaneArt(width: MajorPaneFrames.width, height: MajorPaneFrames.height,

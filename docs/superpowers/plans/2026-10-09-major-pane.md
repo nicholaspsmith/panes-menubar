@@ -14,7 +14,7 @@
 
 - Repo: `/Users/nicholassmith/Code/panes-menubar`, branch `major-pane` (already exists, holds the spec). Every push is a release: the branch is pushed only in Task 11, with `## [0.6.0] - <date>` at the top of `CHANGELOG.md`. Never tag by hand, never `gh pr merge --admin`, merge with plain `gh pr merge --merge` once `release / check` is green.
 - Swift tools 5.9, `platforms: [.macOS(.v13)]`, bundle id `com.nicholaspsmith.Panes`. Tests run with `swift test` from the repo root; the full suite must stay green at every commit.
-- Art format: exactly the keys `width`, `height`, `palette`, `pane`, `states`; canvas 1…64 each way; at most 12 palette colours; `.` transparent; pane role `cell` only; states exactly `idle`, `salute`, `bark`, `at_ease`; fps in (0, 30].
+- Art format: exactly the keys `width`, `height`, `palette`, `pane`, `states`; canvas 1…64 each way; at most 24 palette colours (raised from 12 at the Task 10 gate); `.` transparent; pane role `cell` only; states exactly `idle`, `salute`, `bark`, `at_ease`; fps in (0, 30].
 - Python tools are Python 3 standard library only (`/usr/bin/python3`, 3.9), except `scripts/concept_art.py`, which uses the site's PIL through `art/gen_icons.py`.
 - Licence: code MPL-2.0 (existing `LICENSE`); art CC BY-NC 4.0 in `art/LICENSE` plus a top-level `NOTICE`. Every new Swift/Python/bash file starts with the repo's MPL header comment (copy it from `Sources/PanesGlyph/ScreenGridIcon.swift`).
 - IP rule (binding, from the spec): art drawn from scratch, nothing recognisable as Duke Nukem, Sarge or any existing character, no sprite sheets downloaded or committed.

@@ -73,8 +73,8 @@ final class MajorPaneArtTests: XCTestCase {
             c["frames"] = [["KKK", "KKKK", "KKKK"]]; s["idle"] = c; $0["states"] = s }, "idle frame 0 row 0: needs 4 characters")
         refused(try edited(base) { var s = $0["states"] as! [String: Any]; var c = s["idle"] as! [String: Any]
             c["frames"] = [["KKKZ", "KKKK", "KKKK"]]; s["idle"] = c; $0["states"] = s }, "character not in the palette: Z")
-        refused(try edited(base) { $0["palette"] = Dictionary(uniqueKeysWithValues: "ABCDEFGHIJKLM".map { (String($0), "#000000") }) },
-                "palette has 13 colours; the most is 12")
+        refused(try edited(base) { $0["palette"] = Dictionary(uniqueKeysWithValues: "ABCDEFGHIJKLMNOPQRSTUVWXY".map { (String($0), "#000000") }) },
+                "palette has 25 colours; the most is 24")
         refused(Data("[]".utf8), "the top level must be an object")
         refused(Data("nope".utf8), "not JSON")
     }

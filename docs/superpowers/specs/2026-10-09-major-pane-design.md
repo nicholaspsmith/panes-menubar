@@ -21,8 +21,10 @@ what makes him Panes's: its cells light to show where the front window sits.
 
 - **Art direction:** original SNES-era pixel art. A canvas of about 30x22
   (the art's own `width` and `height`; nothing assumes a size), dark 1 px
-  outlines, at most 12 palette colours with two-tone shading, chunky cartoon
-  proportions (big head, big jaw). Hand-placed pixels, like Polly.
+  outlines, at most 24 palette colours (raised from 12 at the review gate, for
+  a softer "32-bit" finish: highlight and shade tones, soft inner lines, a
+  glass gradient), chunky cartoon proportions (big head, big jaw). Hand-placed
+  pixels, like Polly.
 - **IP rule (binding):** drawn from scratch. It must not copy, trace or adapt
   any game or film character, and must not be recognisable as Duke Nukem,
   Sarge from *Small Soldiers* or anyone else: no signature details (no
@@ -64,7 +66,7 @@ Polly's format with one addition. `art/major-pane/frames.json`:
 
 ```
 {"width": W, "height": H,
- "palette": {char: "#RRGGBB"},            at most 12 entries, "." is transparent
+ "palette": {char: "#RRGGBB"},            at most 24 entries, "." is transparent
  "pane":    {char: "cell"},                pixels whose colour is decided at render time
  "states":  {name: {"fps", "loop", "frames": [[rows]]}}}
 ```

@@ -105,7 +105,7 @@ def load():
                 for ch in row:
                     assert ch == "." or ch in doc["palette"], f"{state}[{i}] unknown char {ch!r}"
     assert "." not in doc["palette"]
-    assert len(doc["palette"]) <= 12, "palette over 12 colours"
+    assert len(doc["palette"]) <= 24, "palette over 24 colours"
     return doc
 
 
