@@ -30,6 +30,10 @@ public struct MajorPaneArt: Equatable {
     public static let maxColours = 12
     static let topLevelKeys: Set<String> = ["width", "height", "palette", "pane", "states"]
 
+    public static let shipped = MajorPaneArt(width: MajorPaneFrames.width, height: MajorPaneFrames.height,
+                                             palette: MajorPaneFrames.palette, pane: MajorPaneFrames.pane,
+                                             clips: MajorPaneFrames.clips)
+
     public let width: Int
     public let height: Int
     public let palette: [Character: UInt32]

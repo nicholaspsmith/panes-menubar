@@ -78,4 +78,16 @@ final class MajorPaneArtTests: XCTestCase {
         refused(Data("[]".utf8), "the top level must be an object")
         refused(Data("nope".utf8), "not JSON")
     }
+
+    /// …/panes-menubar/Tests/PanesGlyphTests/X.swift → …/panes-menubar
+    static let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+
+    func testCompiledFramesMatchTheirSourceJSON() throws {
+        let swift = try String(contentsOf: Self.repo.appendingPathComponent("Sources/PanesGlyph/MajorPaneFrames.swift"), encoding: .utf8)
+        let line = try XCTUnwrap(swift.split(separator: "\n").first { $0.hasPrefix("// source: ") })
+        let file = Self.repo.appendingPathComponent(String(line.dropFirst("// source: ".count)))
+        let fromSource = try MajorPaneArt(json: Data(contentsOf: file))
+        XCTAssertEqual(fromSource, MajorPaneArt.shipped,
+                       "MajorPaneFrames.swift is out of sync with \(file.lastPathComponent); run scripts/gen_major_pane_frames.py")
+    }
 }
