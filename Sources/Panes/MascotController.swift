@@ -23,14 +23,26 @@ final class MascotController {
     private var frameTimer: Timer?
     private var observers: [NSObjectProtocol] = []
 
-    /// False while the grid icon is chosen: nothing is drawn or scheduled.
+    /// False while the grid icon is chosen: nothing is drawn or scheduled. Coming
+    /// back starts from the steady pose, and the app's next `show` draws it with the
+    /// front window and trust as they are then, not as they were when the grid was chosen.
     var enabled = false {
-        didSet { guard enabled != oldValue else { return }; drawn = nil; redraw() }
+        didSet {
+            guard enabled != oldValue else { return }
+            driver.restart(now: Date())
+            drawn = nil
+            if !enabled { frameTimer?.invalidate(); frameTimer = nil }
+        }
     }
 
     init(status: StatusItemController) {
         self.status = status
         driver = MascotDriver(now: Date())
+    }
+
+    deinit {
+        frameTimer?.invalidate()
+        observers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
     }
 
     func start() {
