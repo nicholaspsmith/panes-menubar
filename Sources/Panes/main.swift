@@ -225,6 +225,18 @@ final class App: NSObject, NSApplicationDelegate {
         return ScreenGridIcon.Model(display: frame, windows: windows, active: trusted)
     }
 
+    /// The pane's lit cells: those the frontmost app's front window covers, and
+    /// only when that window is on the icon's display; a front window on another
+    /// display lights nothing rather than the wrong cells.
+    private func frontCells(on display: CGRect) -> Set<GridCell> {
+        let displays = Screens.displays
+        guard let index = displays.firstIndex(where: { $0.frame == display }),
+              let front = PaneCells.frontWindow(of: NSWorkspace.shared.frontmostApplication?.processIdentifier,
+                                                in: WindowList.appWindows()),
+              displays.index(for: front) == index else { return [] }
+        return PaneCells.lit(front: front, visible: displays[index].visibleFrame)
+    }
+
     /// The once-a-minute animation: the display's windows, as they are now,
     /// bunch up and slide out into their tiles. Nothing to slide on an empty
     /// display, and the poll leaves the icon alone until the slide is done.
@@ -255,8 +267,7 @@ final class App: NSObject, NSApplicationDelegate {
         guard force || s != iconSignature else { return }
         iconSignature = s
         if mascotChosen {
-            let visible = Screens.displays.first { $0.frame == m.display }?.visibleFrame ?? m.display
-            mascot?.show(active: m.active, lit: PaneCells.lit(windows: m.windows, visible: visible))
+            mascot?.show(active: m.active, lit: frontCells(on: m.display))
         } else {
             status.setIcon(ScreenGridIcon.image(m))
         }

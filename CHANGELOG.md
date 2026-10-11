@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.8.1] - 2026-10-10
+### Fixed
+- Major Pane's pane lights the cells of the frontmost app's window, and only when that window is on the icon's display; a window in front on another display lights nothing instead of the wrong cells.
+- The icon is redrawn only when its pixels change, so an idle Major Pane no longer wakes the menu bar four times a second.
+- A stray merge marker in this changelog.
+
 ## [0.8.0] - 2026-10-09
 ### Added
 - Major Pane, Panes's mascot: a pixel-art commander of windows in the menu bar, his pane held in front of him like a riot shield. Its 4×4 cells light to show where the front window sits; he salutes in the Menumon minute cue, barks when Panes moves a window, and stands at ease, greyed, without Accessibility.
@@ -19,7 +25,6 @@ Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 ## [0.7.0] - 2026-10-09
 
 - No user-visible changes.
-||||||| parent of 9a3d207 (0.8.0: Major Pane)
 
 ## [0.6.0] - 2026-10-08
 

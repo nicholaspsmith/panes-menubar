@@ -19,7 +19,7 @@ final class MascotController {
     private var lit = Set<GridCell>()
     private var active = true
     private var asleep = false
-    private var drawn: MajorPanePose?
+    private var drawn: FrameKey?
     private var frameTimer: Timer?
     private var observers: [NSObjectProtocol] = []
 
@@ -76,12 +76,15 @@ final class MascotController {
         let now = Date(), reduce = reduceMotion || asleep
         let p = driver.pose(now: now, timing: { self.timing($0) }, reduceMotion: reduce)
         let pose = MajorPanePose(state: p.state.rawValue, frame: p.frame, lit: lit, active: active)
-        if pose != drawn {
-            drawn = pose
-            status.setIcon(MajorPaneRenderer.image(art: art, pose: pose))
+        // The art repeats frames to hold a pose: only pixels that differ reach the bar.
+        let key = FrameKey(art: art, pose: pose)
+        if key != drawn {
+            drawn = key
+            status.setIcon(MajorPaneRenderer.image(art: art, pose: pose, scales: [1, 2]))   // the bar is 1x or 2x
         }
         guard let delay = driver.nextFrameDelay(now: now, timing: { self.timing($0) }, reduceMotion: reduce) else { return }
         let t = Timer(timeInterval: delay, repeats: false) { [weak self] _ in self?.redraw() }
+        t.tolerance = delay * 0.1                   // lets the OS coalesce the idle's wakeups
         RunLoop.main.add(t, forMode: .common)       // keeps playing while a menu is open
         frameTimer = t
     }
