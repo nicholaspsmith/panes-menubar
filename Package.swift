@@ -13,6 +13,8 @@ let package = Package(
     products: [
         .executable(name: "Panes", targets: ["Panes"]),
         .library(name: "PanesCore", targets: ["PanesCore"]),
+        // The Major Pane review page: `swift run major-pane-render preview OUT.html [--frames FILE]`.
+        .executable(name: "major-pane-render", targets: ["MajorPaneRender"]),
     ],
     dependencies: [
         .package(path: "../StatusItemKit"),
@@ -27,6 +29,7 @@ let package = Package(
         // (widgets.nicksmith.software, art/glyphs) compiles it too, for the
         // README images and the app icon: scripts/make-icon.sh.
         .target(name: "PanesGlyph", dependencies: ["PanesCore"]),
+        .executableTarget(name: "MajorPaneRender", dependencies: ["PanesGlyph"]),
         .executableTarget(
             name: "Panes",
             dependencies: [

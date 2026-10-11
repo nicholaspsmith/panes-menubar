@@ -41,6 +41,15 @@ final class App: NSObject, NSApplicationDelegate {
     /// Panes's turn in the minute cue: the windows slide into their tiles.
     private var minuteCue: MinuteCue!
     private var slide: IconAnimation?
+    /// Major Pane, when he is the icon (Settings ▸ Icon).
+    private var mascot: MascotController?
+    private static let iconStyleKey = "IconStyle"
+    /// "major-pane" (default) or "grid".
+    private var iconStyle: String {
+        get { UserDefaults.standard.string(forKey: Self.iconStyleKey) ?? "major-pane" }
+        set { UserDefaults.standard.set(newValue, forKey: Self.iconStyleKey) }
+    }
+    private var mascotChosen: Bool { iconStyle == "major-pane" }
     /// The window the open menu acts on, captured as it opens: the menu does
     /// not activate Panes, so the frontmost app is still the user's.
     private var menuTarget: AXWindow?
@@ -60,10 +69,18 @@ final class App: NSObject, NSApplicationDelegate {
         status.start()
         yieldClient = YieldClient(item: status)
         yieldClient.start()
+        // Before anything can refresh the icon (the Menu Crane 1.3.0 lesson).
+        let mascot = MascotController(status: status)
+        mascot.enabled = mascotChosen
+        mascot.start()
+        self.mascot = mascot
 
         tap = HotkeyTap(bindings: model.tapBindings) { [weak self] token in self?.handle(token: token) ?? false }
         model.onChange = { [weak self] bindings in self?.tap.setBindings(bindings) }
-        mover.onMoved = { [weak self] in self?.refreshIcon(force: true) }
+        mover.onMoved = { [weak self] in
+            self?.refreshIcon(force: true)
+            if self?.mascotChosen == true { self?.mascot?.bark() }
+        }
         chordTap.chord = model.chordModifier
         model.onChordChange = { [weak self] chord in self?.chordTap.chord = chord }
         chordTap.reservedKeys = { [weak self] chord in
@@ -99,7 +116,7 @@ final class App: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { [weak self] _ in self?.refreshIcon(force: true) }
         refreshIcon(force: true)
-        minuteCue = MinuteCue { [weak self] in self?.slideTiles() }
+        minuteCue = MinuteCue { [weak self] in self?.minuteCueFired() }
         minuteCue.start()
     }
 
@@ -222,16 +239,27 @@ final class App: NSObject, NSApplicationDelegate {
         anim.start()
     }
 
+    /// Panes's slot in the Menumon minute cue: Major Pane salutes, or the grid's tiles slide.
+    private func minuteCueFired() {
+        if mascotChosen { mascot?.salute() } else { slideTiles() }
+    }
+
     private func refreshIcon(force: Bool = false) {
         guard let status, slide?.isRunning != true else { return }
         let m = iconModel()
         var sig = Hasher()
         sig.combine(WindowMap.signature(m.windows + [m.display]))
         sig.combine(m.active)
+        sig.combine(iconStyle)
         let s = sig.finalize()
         guard force || s != iconSignature else { return }
         iconSignature = s
-        status.setIcon(ScreenGridIcon.image(m))
+        if mascotChosen {
+            let visible = Screens.displays.first { $0.frame == m.display }?.visibleFrame ?? m.display
+            mascot?.show(active: m.active, lit: PaneCells.lit(windows: m.windows, visible: visible))
+        } else {
+            status.setIcon(ScreenGridIcon.image(m))
+        }
     }
 
     // MARK: - Menu
@@ -290,6 +318,16 @@ final class App: NSObject, NSApplicationDelegate {
                 title: "Grid on Hold ⌥⌘", isOn: self.holdGridEnabled,
                 toolTip: "Hold ⌥⌘ on its own and a grid covers the screen; click or drag across cells"
             ) { [weak self] on in self?.setHoldGrid(on) })
+            let icon = NSMenuItem(title: "Icon", action: nil, keyEquivalent: "")
+            let pick = NSMenu()
+            for (title, style) in [("Major Pane", "major-pane"), ("Screen Grid", "grid")] {
+                let item = self.actionItem(title, #selector(self.chooseIcon(_:)))
+                item.representedObject = style
+                item.state = self.iconStyle == style ? .on : .off
+                pick.addItem(item)
+            }
+            icon.submenu = pick
+            sub.addItem(icon)
             sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
         })
     }
@@ -358,6 +396,13 @@ final class App: NSObject, NSApplicationDelegate {
     private func setHoldGrid(_ on: Bool) {
         holdGridEnabled = on
         if !holdGridEnabled { apply(holdGrid.dismissed()) }
+    }
+
+    @objc private func chooseIcon(_ sender: NSMenuItem) {
+        iconStyle = sender.representedObject as? String ?? "major-pane"
+        slide?.cancel(); slide = nil
+        mascot?.enabled = mascotChosen
+        refreshIcon(force: true)
     }
 
     @objc private func openPrefs() {

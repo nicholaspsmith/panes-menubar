@@ -8,9 +8,18 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.8.0] - 2026-10-09
+### Added
+- Major Pane, Panes's mascot: a pixel-art commander of windows in the menu bar, his pane held in front of him like a riot shield. Its 4×4 cells light to show where the front window sits; he salutes in the Menumon minute cue, barks when Panes moves a window, and stands at ease, greyed, without Accessibility.
+- Settings ▸ Icon: Major Pane (default) or the screen grid.
+### Changed
+- The grid's tile-slide animation now plays only when the grid is the chosen icon.
+- The app icon and README pictures are Major Pane.
+
 ## [0.7.0] - 2026-10-09
 
 - No user-visible changes.
+||||||| parent of 9a3d207 (0.8.0: Major Pane)
 
 ## [0.6.0] - 2026-10-08
 
