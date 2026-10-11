@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.8.3] - 2026-10-11
+### Fixed
+- Switching back to Major Pane in Settings ▸ Icon no longer plays a bark that was waiting when you switched away; he comes back standing at ease or idle, with the pane lit from the front window as it is now.
+
 ## [0.8.2] - 2026-10-11
 ### Changed
 - Major Pane's pane is now as big as the old screen-grid icon, with a faint 4×4 grid on the glass so the lit cells line up with Panes's grid. His head and fists show around it; his legs no longer do.

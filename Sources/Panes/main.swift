@@ -413,7 +413,7 @@ final class App: NSObject, NSApplicationDelegate {
         iconStyle = sender.representedObject as? String ?? "major-pane"
         slide?.cancel(); slide = nil
         mascot?.enabled = mascotChosen
-        refreshIcon(force: true)
+        refreshIcon(force: true)        // draws the chosen icon from how things are now
     }
 
     @objc private func openPrefs() {

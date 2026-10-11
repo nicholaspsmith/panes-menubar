@@ -87,9 +87,31 @@ final class MascotDriverTests: XCTestCase {
     func testClockSteppingBackEndsAOneShot() {
         var d = MascotDriver(now: t0)
         d.salute(now: at(100))
-        XCTAssertEqual(pose(&d, 50).state, .idle)
+        XCTAssertEqual(pose(&d, 50.3).state, .idle)
         XCTAssertNil(d.playing)
-        XCTAssertEqual(pose(&d, 50).frame, 0)             // idle restarts from now, never from the future
+        XCTAssertEqual(pose(&d, 50.3).frame, 1)           // the idle keeps its own loop from t0: 201 ticks in
+    }
+
+    func testClockSteppingBackRestartsTheSteadyLoopFromNow() {
+        var d = MascotDriver(now: at(100))
+        XCTAssertEqual(pose(&d, 50).frame, 0)
+        XCTAssertEqual(pose(&d, 50.3).frame, 1)           // counted from 50, not from the future 100
+    }
+
+    func testRestartDropsWhatPlayedAndWhatWaited() {
+        var d = MascotDriver(now: t0)
+        d.salute(now: at(1)); d.bark(now: at(1.2))
+        d.restart(now: at(60))
+        XCTAssertEqual(pose(&d, 60).state, .idle); XCTAssertEqual(pose(&d, 60).frame, 0)
+        XCTAssertNil(d.playing); XCTAssertFalse(d.pendingBark)
+        XCTAssertEqual(pose(&d, 60.3).frame, 1)           // the idle counts from the restart
+    }
+
+    func testRestartKeepsTheSteadyPose() {
+        var d = MascotDriver(now: t0)
+        d.update(active: false, now: at(1))
+        d.restart(now: at(60))
+        XCTAssertEqual(pose(&d, 60).state, .atEase)
     }
 
     func testReduceMotionClearsEverythingPlaying() {

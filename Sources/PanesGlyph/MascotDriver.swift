@@ -36,6 +36,13 @@ public struct MascotDriver {
         playing = nil; playingSince = nil; pendingBark = false
     }
 
+    /// Back to the steady pose from `now`, with nothing playing and nothing waiting:
+    /// what was queued before the grid icon was chosen never plays after it.
+    public mutating func restart(now: Date) {
+        playing = nil; playingSince = nil; pendingBark = false
+        steadySince = now
+    }
+
     /// The minute cue: only an idle Major Pane with nothing playing salutes.
     public mutating func salute(now: Date) {
         guard steady == .idle, playing == nil else { return }
