@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.8.2] - 2026-10-11
+### Changed
+- Major Pane's pane is now as big as the old screen-grid icon, with a faint 4×4 grid on the glass so the lit cells line up with Panes's grid. His head and fists show around it; his legs no longer do.
+
 ## [0.8.1] - 2026-10-10
 ### Fixed
 - Major Pane's pane lights the cells of the frontmost app's window, and only when that window is on the icon's display; a window in front on another display lights nothing instead of the wrong cells.

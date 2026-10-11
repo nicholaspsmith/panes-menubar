@@ -19,7 +19,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.8.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 0.8.2** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
 
@@ -183,8 +183,10 @@ its target hugged, so a too-wide right half stays flush right.
 
 Panes's mascot is **Major Pane**, a commander of windows: blond flat-top,
 square jaw, dark shades, chest out, holding his pane in front of him like a
-riot shield, a fist round each edge. He is pixel art, hand-placed on a 22×22
-grid with twenty colours, drawn in whole pixels at the bar's backing scale so
+riot shield, a fist round each edge; the pane is the size of the old
+screen-grid glyph and ruled into a faint 4×4 grid. He is pixel art,
+hand-placed on a 29×22 grid with eighteen colours, drawn in whole pixels at
+the bar's backing scale so
 nothing is ever blurred. The pane is a 4×4 window grid, and its cells light to
 show where the frontmost app's window sits: eight for a half, four for a
 quarter, all sixteen when it is maximized, none when it floats free, when there
