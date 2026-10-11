@@ -52,8 +52,10 @@ skipped, a move during a salute relights the pane but the bark waits for the
 salute to end and then plays. Nothing plays while the icon style is the grid.
 
 **The pane's cells.** Sixteen cells, from PanesCore's existing
-`Grid.cells(coveredBy:in:)` on the front window's frame in the display's
-visible area: a half lights eight, a quarter four, a maximised window all
+`Grid.cells(coveredBy:in:)` on the frontmost app's front window (0.8.1: the
+window of `NSWorkspace.frontmostApplication`, not merely the topmost window
+on the icon's display; if it sits on another display, none lit) in the
+display's visible area: a half lights eight, a quarter four, a maximised window all
 sixteen. A free-floating window lights the cells it covers (that is what the
 function returns). No front window, or no window on the display: none lit.
 Lit is Panes's accent (the `front` amber of the grid glyph, as a palette

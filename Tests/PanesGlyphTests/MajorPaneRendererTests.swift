@@ -101,4 +101,30 @@ final class MajorPaneRendererTests: XCTestCase {
     func testLitCellsIgnoreWindowsOffTheDisplay() {
         XCTAssertEqual(PaneCells.lit(windows: [CGRect(x: 5000, y: 100, width: 800, height: 600)], visible: visible), [])
     }
+
+    // MARK: Review fixes (0.8.1)
+
+    func testFrameKeyIsEqualForIdenticalFramesAndDiffersOtherwise() {
+        let twice = MajorPaneArt(width: 2, height: 1, palette: ["K": 0], pane: [],
+                                 clips: ["idle": MajorPaneClip(fps: 4, loop: true, frames: [["K."], ["K."], [".K"]])])
+        let a = FrameKey(art: twice, pose: .init(state: "idle", frame: 0))
+        XCTAssertEqual(a, FrameKey(art: twice, pose: .init(state: "idle", frame: 1)))      // same rows: nothing to redraw
+        XCTAssertNotEqual(a, FrameKey(art: twice, pose: .init(state: "idle", frame: 2)))
+        XCTAssertNotEqual(a, FrameKey(art: twice, pose: .init(state: "idle", frame: 0, lit: PaneCells.all)))
+        XCTAssertNotEqual(a, FrameKey(art: twice, pose: .init(state: "idle", frame: 0, active: false)))
+    }
+
+    func testFrontWindowIsTheFrontmostAppsFirstWindow() {
+        let infos = [WindowInfo(bounds: CGRect(x: 0, y: 0, width: 10, height: 10), ownerPID: 7),
+                     WindowInfo(bounds: CGRect(x: 5, y: 5, width: 10, height: 10), ownerPID: 9),
+                     WindowInfo(bounds: CGRect(x: 1, y: 1, width: 10, height: 10), ownerPID: 9)]
+        XCTAssertEqual(PaneCells.frontWindow(of: 9, in: infos), CGRect(x: 5, y: 5, width: 10, height: 10))
+        XCTAssertNil(PaneCells.frontWindow(of: 3, in: infos))
+        XCTAssertNil(PaneCells.frontWindow(of: nil, in: infos))
+    }
+
+    func testNoFrontWindowLightsNothing() {
+        XCTAssertEqual(PaneCells.lit(front: nil, visible: visible), [])
+        XCTAssertEqual(PaneCells.lit(front: visible, visible: visible), PaneCells.all)
+    }
 }

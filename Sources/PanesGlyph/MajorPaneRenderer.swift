@@ -19,12 +19,39 @@ public struct MajorPanePose: Equatable {
     }
 }
 
+/// What the drawn icon depends on: the frame's rows (not its index, since the art
+/// repeats frames to hold a pose), the lit cells and the trust state. Two equal
+/// keys draw the same pixels, so the app skips the redraw.
+public struct FrameKey: Equatable {
+    public let rows: [String]
+    public let lit: Set<GridCell>
+    public let active: Bool
+    public init(art: MajorPaneArt, pose: MajorPanePose) {
+        let clip = art.clip(pose.state)
+        rows = clip.frames.isEmpty ? [] : clip.frames[min(max(pose.frame, 0), clip.frames.count - 1)]
+        lit = pose.lit
+        active = pose.active
+    }
+}
+
 /// Which pane cells the front window lights (spec "The pane's cells").
 public enum PaneCells {
     /// `windows` back to front, as `WindowMap.windows` returns them; the last is the front.
     public static func lit(windows: [CGRect], visible: CGRect) -> Set<GridCell> {
-        guard let front = windows.last else { return [] }
+        lit(front: windows.last, visible: visible)
+    }
+
+    /// The cells `front` covers; none without a front window.
+    public static func lit(front: CGRect?, visible: CGRect) -> Set<GridCell> {
+        guard let front else { return [] }
         return LayoutGrid().cells(coveredBy: front, in: visible)
+    }
+
+    /// The frontmost app's first (topmost) window, from the window list's
+    /// front-to-back order; nil when it has none on screen or there is no front app.
+    public static func frontWindow(of pid: Int32?, in infos: [WindowInfo]) -> CGRect? {
+        guard let pid else { return nil }
+        return infos.first { $0.ownerPID == pid }?.bounds
     }
     public static let all = Set(LayoutGrid().cells)
     public static let half = Set(LayoutGrid().cells.filter { $0.column < 2 })

@@ -5,13 +5,9 @@
 #
 # Copyright (c) 2026 Nicholas Smith
 
-# Rebuild Resources/bundle/AppIcon.icns and docs/mascot.png: Panes's menu-bar
-# glyph (PanesGlyph's ScreenGridIcon, a display with its windows on it) drawn
-# large on the dark macOS tile every Menumon app shares. The renderer lives in
-# the Menumon site repo, which draws every app's icon the same way; this runs
-# it for this app only. docs/menubar-icon.png comes from the same repo's
-# art/glyphs/render-glyphs.sh, which renders every app's strip.
-# Needs widgets.nicksmith.software and StatusItemKit checked out beside this repo.
+# Rebuild Resources/bundle/AppIcon.icns and docs/mascot.png: Major Pane, drawn
+# large on the dark macOS tile every Menumon app shares, through the site's
+# app-icons.sh (widgets.nicksmith.software/art/glyphs, which compiles PanesGlyph).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 renderer=../widgets.nicksmith.software/art/glyphs/app-icons.sh
