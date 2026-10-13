@@ -119,6 +119,9 @@ struct AXWindow {
         return CGRect(origin: origin, size: size)
     }
 
+    /// Its app's main window: the one the app's Window menu acts on.
+    var isMain: Bool { bool(kAXMainAttribute) == true }
+
     var isResizable: Bool {
         var settable: DarwinBoolean = false
         return AXUIElementIsAttributeSettable(element, kAXSizeAttribute as CFString, &settable) == .success

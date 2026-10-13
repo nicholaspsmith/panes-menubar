@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.8.4] - 2026-10-13
+### Fixed
+- A window you tiled with macOS's own tiling (the green button's menu, Window ▸ Fill or Move & Resize) no longer jumps back into that tile when Mission Control closes or a display wakes after Panes has moved it: Panes now takes it out of the macOS tile (Return to Previous Size) before moving it
+
 ## [0.8.3] - 2026-10-11
 ### Fixed
 - Switching back to Major Pane in Settings ▸ Icon no longer plays a bark that was waiting when you switched away; he comes back standing at ease or idle, with the pane lit from the front window as it is now.
