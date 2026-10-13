@@ -21,6 +21,9 @@ final class WindowMover {
     /// steps its size up or down.
     private var lastCentered: [WindowKey: CenterGrow.State] = [:]
     private var running: [WindowKey: Glide] = [:]
+    /// Windows macOS is returning from one of its own tiles, and where each
+    /// goes once that settles (a later press while it settles replaces it).
+    private var untiling: [WindowKey: (to: CGRect, visible: CGRect)] = [:]
     /// Seconds one position+size set took, per app, smoothed. Drives
     /// `AnimationPacing` so a slow app gets fewer steps instead of a stutter.
     private var setCost: [pid_t: TimeInterval] = [:]
@@ -107,6 +110,7 @@ final class WindowMover {
     /// press during a glide computes from (and Restore returns to) the
     /// settled frame rather than a frame halfway there.
     private func currentFrame(_ window: AXWindow) -> CGRect? {
+        if let pending = untiling[window.key] { return pending.to }
         if let glide = running[window.key] { return glide.animation.to }
         return window.frame
     }
@@ -127,7 +131,34 @@ final class WindowMover {
         }
     }
 
+    /// Glide there, first taking the window out of a tile macOS put it in
+    /// (`NativeTile`): macOS animates it back to its earlier size and would
+    /// overwrite any frame set meanwhile, so the glide waits for that to settle.
     private func glide(_ window: AXWindow, from: CGRect, to: CGRect, visible: CGRect) {
+        let key = window.key
+        if untiling[key] != nil {
+            untiling[key] = (to, visible)
+            return
+        }
+        guard running[key] == nil, NativeTile.untile(window) else {
+            startGlide(window, from: from, to: to, visible: visible)
+            return
+        }
+        log.notice("untiled: macOS had the window in one of its tiles")
+        untiling[key] = (to, visible)
+        var settle = FrameSettle()
+        let start = CACurrentMediaTime()
+        let timer = Timer(timeInterval: FrameSettle.interval, repeats: true) { [weak self] t in
+            let frame = window.frame
+            guard settle.isSettled(frame: frame, elapsed: CACurrentMediaTime() - start) else { return }
+            t.invalidate()
+            guard let self, let pending = self.untiling.removeValue(forKey: key) else { return }
+            self.startGlide(window, from: frame ?? from, to: pending.to, visible: pending.visible)
+        }
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func startGlide(_ window: AXWindow, from: CGRect, to: CGRect, visible: CGRect) {
         let key = window.key
         running[key]?.timer?.invalidate()
         running[key]?.restoreEnhancedUI()
