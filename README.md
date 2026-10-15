@@ -19,7 +19,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.8.4** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 0.8.5** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
 
@@ -180,11 +180,13 @@ minimum width, a terminal snapping to cells) is nudged back against the edges
 its target hugged, so a too-wide right half stays flush right.
 
 A window you tiled with macOS's own tiling (the green button's menu, Window ▸
-Fill or Move & Resize) stays in macOS's tile however it is moved afterwards,
-and macOS puts it back there whenever Mission Control closes or a display
-wakes. So before moving one, Panes runs the app's Window ▸ Move & Resize ▸
+Fill or Move & Resize) stays in macOS's tile while it is moved around inside
+that tile, and macOS puts it back there whenever Mission Control closes or a
+display wakes. So before moving one to somewhere inside its tile (Fill to a
+half, a half to its quarter), Panes runs the app's Window ▸ Move & Resize ▸
 Return to Previous Size, waits the 0.4 s macOS takes to animate that, and
-then glides.
+then glides. A move out of the tile glides straight away: macOS forgets the
+tile by itself once the window leaves it.
 
 ## Major Pane
 

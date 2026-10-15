@@ -132,15 +132,18 @@ final class WindowMover {
     }
 
     /// Glide there, first taking the window out of a tile macOS put it in
-    /// (`NativeTile`): macOS animates it back to its earlier size and would
-    /// overwrite any frame set meanwhile, so the glide waits for that to settle.
+    /// (`NativeTile`) when the move stays inside that tile (`TileRecord`; a
+    /// move out of it ends the tile by itself): macOS animates it back to its
+    /// earlier size and would overwrite any frame set meanwhile, so the glide
+    /// waits for that to settle.
     private func glide(_ window: AXWindow, from: CGRect, to: CGRect, visible: CGRect) {
         let key = window.key
         if untiling[key] != nil {
             untiling[key] = (to, visible)
             return
         }
-        guard running[key] == nil, NativeTile.untile(window) else {
+        guard running[key] == nil, TileRecord.canOutlive(moveFrom: from, to: to),
+              NativeTile.untile(window) else {
             startGlide(window, from: from, to: to, visible: visible)
             return
         }
