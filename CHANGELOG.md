@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.9.0] - 2026-10-15
+
+- The caterpillar icon in the menu bar can now walk, with a smooth rolling motion that is distinct from its previous running animation.
+
 ## [0.8.5] - 2026-10-14
 ### Fixed
 - Moving a window out of a tile macOS put it in (the green button's menu, Window ▸ Fill or Move & Resize), for example from the left half to the right half or to the centre, no longer first shrinks it back to its earlier size: it glides straight there. macOS forgets the tile by itself once the window leaves it, so Panes only runs Return to Previous Size when the window stays inside the tile.
