@@ -10,9 +10,10 @@ import ApplicationServices
 /// macOS's own window tiles: the green button's menu, Window ▸ Fill and
 /// Window ▸ Move & Resize. macOS remembers a window it tiled and puts it back
 /// in that tile whenever its layout changes (Mission Control closing, a
-/// display waking), however the window was moved since; moving it through
-/// Accessibility does not clear that. So before Panes moves a window macOS has
-/// tiled, it runs the app's own Window ▸ Move & Resize ▸ Return to Previous Size.
+/// display waking). Moving it through Accessibility clears that only once the
+/// window leaves the tile (`TileRecord`). So before Panes moves a window macOS
+/// has tiled to somewhere inside that tile, it runs the app's own
+/// Window ▸ Move & Resize ▸ Return to Previous Size.
 enum NativeTile {
     /// That menu item's identifier (its action), the same in every language.
     static let untileIdentifier = "_zoomUntile:"

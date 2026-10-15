@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.8.5] - 2026-10-14
+### Fixed
+- Moving a window out of a tile macOS put it in (the green button's menu, Window ▸ Fill or Move & Resize), for example from the left half to the right half or to the centre, no longer first shrinks it back to its earlier size: it glides straight there. macOS forgets the tile by itself once the window leaves it, so Panes only runs Return to Previous Size when the window stays inside the tile.
+
 ## [0.8.4] - 2026-10-13
 ### Fixed
 - A window you tiled with macOS's own tiling (the green button's menu, Window ▸ Fill or Move & Resize) no longer jumps back into that tile when Mission Control closes or a display wakes after Panes has moved it: Panes now takes it out of the macOS tile (Return to Previous Size) before moving it
