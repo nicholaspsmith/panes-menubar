@@ -8,6 +8,11 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [0.9.0] - 2026-10-15
+### Changed
+- `⌥⌘C` now makes the window half the screen's width, centred, at full height; pressing it again centres it both ways at two thirds of the height, and further presses alternate between the two. It no longer steps through 50%, 66%, 80% and 100% sizes.
+- Every glide is smoother: it eases in and out over 0.26 s instead of starting fast over 0.18 s. Growing a centred window to full height or to the whole screen, and back, no longer jumps at the start; measured frame by frame, the window now moves about 30 points between frames (45 at worst), down from up to 217.
+
 ## [0.8.5] - 2026-10-14
 ### Fixed
 - Moving a window out of a tile macOS put it in (the green button's menu, Window ▸ Fill or Move & Resize), for example from the left half to the right half or to the centre, no longer first shrinks it back to its earlier size: it glides straight there. macOS forgets the tile by itself once the window leaves it, so Panes only runs Return to Previous Size when the window stays inside the tile.
