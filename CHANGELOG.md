@@ -10,7 +10,9 @@ Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 
 ## [0.10.0] - 2026-10-15
 
-- The caterpillar icon in the menu bar can now walk, with a new animation that is slower and distinct from its previous running motion.
+- Carol's head no longer gets cut off during her once-a-minute run, as her head movement now stays within the icon's boundaries.
+- Carol can now walk with a rolling hump motion that is slower and distinct from her run, with smooth easing in and out.
+- Carol's walking animation is optimized to cache poses, ensuring smooth performance with minimal resource usage.
 
 ## [0.9.0] - 2026-10-15
 ### Changed
