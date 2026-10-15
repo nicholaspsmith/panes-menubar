@@ -19,7 +19,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.8.5** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 0.9.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
 
@@ -38,7 +38,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 | `⌥⌘[` / `⌥⌘]` | top-left / top-right quarter |
 | `⌥⌘;` / `⌥⌘'` | bottom-left / bottom-right quarter |
 | `⌥⌘M` | maximize (the visible frame: below the menu bar, beside the Dock) |
-| `⌥⌘C` | center at the screen's proportions; press again to step the size up, then down (see below) |
+| `⌥⌘C` | center at half the screen's width, full height; press again for two thirds of the height, centred both ways (see below) |
 | `⌥⌘⌫` | restore: undo the last move Panes made to this window (again for the one before) |
 | `⌥⌘N` | move to the next display, keeping the window's relative frame |
 | `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two, when you let go of `⌥⌘` (see below) |
@@ -51,15 +51,13 @@ restore, or a single display for Next Display, the key passes through to the
 app. Rebind any of them in **Settings ▸ Preferences…** (Esc cancels a
 recording; a shortcut shared by two actions is flagged in red).
 
-### Center, then grow
+### Center: column, then box
 
-`⌥⌘C` centres the window, horizontally and vertically, at the screen's own
-proportions. Its sizes are 50%, 66%, 80% and 100% of the visible frame's width
-and height. The first press picks the size closest to the window's current
-one; each further press (while the window is still where the last `⌥⌘C` put
-it) steps one size up until it fills the screen, then back down to 50%, then
-up again, for as long as you keep pressing. Move the window in between (by
-hand or with another Panes action) and the next press starts over.
+`⌥⌘C` makes the window half the screen's width, centred left to right and
+the full height of the screen: a column. Press it again and the window is
+centred both ways at two thirds of the height: a box. Further presses
+alternate column, box, column. A window that isn't in the column (moved by
+hand, or by another Panes action) gets the column first.
 
 ### Arrows combine
 
@@ -170,8 +168,10 @@ across to the next display never snaps on the way.
 
 ### Animation
 
-Every move (shortcut, grid, snap, restore) glides there: an ease-out over
-0.18 s, a little quicker than macOS's own tiling, stepping at 120 Hz. It is
+Every move (shortcut, grid, snap, restore) glides there, eased in and out
+over 0.26 s (about as long as macOS's own tiling), stepping at 120 Hz. The
+first step only reaches the screen 40-100 ms in, so a glide that started fast
+would jump; this one starts gently and stays smooth. It is
 time-driven, so an app slow to apply Accessibility sets gets fewer, larger
 steps rather than a late stutter, and one too slow for four steps jumps
 straight there. Reduce Motion jumps every time. Each move ends with an exact
@@ -259,7 +259,7 @@ Menumon app shares.
   without changing size, which tells a title-bar drag from a resize or a drag
   inside the content.
 - **PanesCore** holds the testable logic: frames for every action on any
-  display layout, center-and-grow steps, cell-key chords, the relative move between displays, the fit-after-refusal
+  display layout, the center column and box, cell-key chords, the relative move between displays, the fit-after-refusal
   nudge, snap zones, restore history, the grid, the frame interpolation and
   pacing, the icon's window mapping and pixel alignment, bindings and their
   formatting. **PanesGlyph** draws the icon, shared by the app and

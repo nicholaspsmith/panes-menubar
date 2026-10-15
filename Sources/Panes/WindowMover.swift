@@ -14,12 +14,6 @@ let log = Logger(subsystem: "com.nicholaspsmith.Panes", category: "windows")
 /// old one for Restore, and glides the window there.
 final class WindowMover {
     private var history = RestoreHistory<WindowKey>()
-    /// The frame Panes last gave each window, so Center can tell a second
-    /// press (grow) from a first one (just centre).
-    private var lastPlaced: [WindowKey: CGRect] = [:]
-    /// Where the last Center press left each window, so a repeated press
-    /// steps its size up or down.
-    private var lastCentered: [WindowKey: CenterGrow.State] = [:]
     private var running: [WindowKey: Glide] = [:]
     /// Windows macOS is returning from one of its own tiles, and where each
     /// goes once that settles (a later press while it settles replaces it).
@@ -56,15 +50,11 @@ final class WindowMover {
         case .restore:
             guard let previous = history.pop(for: window.key) else { return false }
             let vi = displays.index(for: previous) ?? di
-            lastPlaced[window.key] = previous
             glide(window, from: current, to: previous, visible: displays[vi].visibleFrame)
             return true
         case .center:
             let v = displays[di].visibleFrame
-            let state = CenterGrow.next(window: current, visible: v, last: lastCentered[window.key])
-            if lastCentered.count > 200 { lastCentered.removeAll() }
-            lastCentered[window.key] = state
-            return move(window, from: current, to: state.frame, visible: v)
+            return move(window, from: current, to: CenterToggle.next(window: current, visible: v), visible: v)
         case .nextDisplay:
             guard let ni = displays.next(after: di) else { return false }
             let target = FrameCalculator.moved(current, from: displays[di].visibleFrame, to: displays[ni].visibleFrame)
@@ -98,8 +88,6 @@ final class WindowMover {
             let origin = FrameFitter.nudgedOrigin(target: target, actual: placed, visible: visible) ?? target.origin
             target = CGRect(origin: origin, size: current.size)
         }
-        if lastPlaced.count > 200 { lastPlaced.removeAll() }
-        lastPlaced[window.key] = target
         guard target != current else { return true }
         history.record(current, for: window.key)
         glide(window, from: current, to: target, visible: visible)
