@@ -10,7 +10,7 @@ Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 
 ## [0.10.0] - 2026-10-15
 
-- The caterpillar icon in the menu bar can now walk, with a smooth rolling motion that is distinct from its previous running animation.
+- The caterpillar icon in the menu bar can now walk, with a new animation that is slower and distinct from its previous running motion.
 
 ## [0.9.0] - 2026-10-15
 ### Changed
