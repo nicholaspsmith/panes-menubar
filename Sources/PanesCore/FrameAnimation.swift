@@ -7,15 +7,22 @@
 import CoreGraphics
 import Foundation
 
-/// A window's glide from one frame to another, eased out like macOS's own
-/// tiling but quicker (0.18 s against roughly 0.25 s).
+/// A window's glide from one frame to another, eased in and out over 0.26 s,
+/// about as long as macOS's own tiling.
+///
+/// Eased in as well as out because the start of a glide never shows: on a
+/// 60 Hz display the first step reaches the screen 40-100 ms in (the app
+/// redraws at the new size first). A quick ease-out spent most of its distance
+/// in that time, so the window jumped and then crept: measured frame by frame,
+/// a centred box growing to full height jumped up to 133 px between frames
+/// with 0.18 s of ease-out, and at most 36 px with this.
 ///
 /// Time-driven, not frame-counted: each tick asks for the frame at the time
 /// that has actually passed. An app that applies Accessibility sets slowly
 /// therefore gets fewer, larger steps that still land on time, instead of
 /// every step played late.
 public struct FrameAnimation: Equatable, Sendable {
-    public static let defaultDuration: TimeInterval = 0.18
+    public static let defaultDuration: TimeInterval = 0.26
 
     public let from: CGRect
     public let to: CGRect
@@ -27,11 +34,12 @@ public struct FrameAnimation: Equatable, Sendable {
         self.duration = duration
     }
 
-    /// Cubic ease-out: fast away, settling gently into place.
-    public static func easeOut(_ t: Double) -> Double {
+    /// Cubic ease-in-out: leaves gently, fastest half-way, settles gently.
+    public static func easeInOut(_ t: Double) -> Double {
         let t = min(max(t, 0), 1)
-        let u = 1 - t
-        return 1 - u * u * u
+        if t < 0.5 { return 4 * t * t * t }
+        let u = 2 - 2 * t
+        return 1 - u * u * u / 2
     }
 
     public func isFinished(at elapsed: TimeInterval) -> Bool {
@@ -42,7 +50,7 @@ public struct FrameAnimation: Equatable, Sendable {
     /// finished.
     public func frame(at elapsed: TimeInterval) -> CGRect {
         if isFinished(at: elapsed) { return to }
-        let p = CGFloat(Self.easeOut(elapsed / duration))
+        let p = CGFloat(Self.easeInOut(elapsed / duration))
         func lerp(_ a: CGFloat, _ b: CGFloat) -> CGFloat { (a + (b - a) * p).rounded() }
         return CGRect(x: lerp(from.minX, to.minX), y: lerp(from.minY, to.minY),
                       width: lerp(from.width, to.width), height: lerp(from.height, to.height))

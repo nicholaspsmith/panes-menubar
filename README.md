@@ -168,8 +168,10 @@ across to the next display never snaps on the way.
 
 ### Animation
 
-Every move (shortcut, grid, snap, restore) glides there: an ease-out over
-0.18 s, a little quicker than macOS's own tiling, stepping at 120 Hz. It is
+Every move (shortcut, grid, snap, restore) glides there, eased in and out
+over 0.26 s (about as long as macOS's own tiling), stepping at 120 Hz. The
+first step only reaches the screen 40-100 ms in, so a glide that started fast
+would jump; this one starts gently and stays smooth. It is
 time-driven, so an app slow to apply Accessibility sets gets fewer, larger
 steps rather than a late stutter, and one too slow for four steps jumps
 straight there. Reduce Motion jumps every time. Each move ends with an exact
