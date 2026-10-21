@@ -41,7 +41,7 @@ final class App: NSObject, NSApplicationDelegate {
     /// Panes's turn in the minute cue: the windows slide into their tiles.
     private var minuteCue: MinuteCue!
     private var slide: IconAnimation?
-    /// Major Pane, when he is the icon (Settings ▸ Icon).
+    /// Major Pane, when he is the icon (Icon ▸ Major Pane).
     private var mascot: MascotController?
     private static let iconStyleKey = "IconStyle"
     /// "major-pane" (default) or "grid".
@@ -329,6 +329,9 @@ final class App: NSObject, NSApplicationDelegate {
                 title: "Grid on Hold ⌥⌘", isOn: self.holdGridEnabled,
                 toolTip: "Hold ⌥⌘ on its own and a grid covers the screen; click or drag across cells"
             ) { [weak self] on in self?.setHoldGrid(on) })
+            sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
+        }, belowSettings: { menu in
+            // Icon sits in the main menu, right below Settings.
             let icon = NSMenuItem(title: "Icon", action: nil, keyEquivalent: "")
             let pick = NSMenu()
             for (title, style) in [("Major Pane", "major-pane"), ("Screen Grid", "grid")] {
@@ -338,8 +341,7 @@ final class App: NSObject, NSApplicationDelegate {
                 pick.addItem(item)
             }
             icon.submenu = pick
-            sub.addItem(icon)
-            sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
+            menu.addItem(icon)
         })
     }
 

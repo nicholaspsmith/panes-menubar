@@ -155,6 +155,7 @@ finer cells. Let go of `⇧` to return to 4×4 (cell-key labels show only there)
   - **Grid on Hold ⌥⌘**: on by default; see [below](#grid-on-hold-).
   - **Preferences…** (⌘,): rebind the shortcuts.
   - **Start at Login**, then the version.
+- **Icon ▸**: Major Pane or Screen Grid.
 - **Quit Panes** (⌘Q).
 
 ### Edge snapping
@@ -205,7 +206,7 @@ He stands at attention (a slow breath, a glint on the shades) and, in Panes's
 turn in the Menumon minute cue, snaps a salute. When Panes moves a window he
 barks the order and the pane relights to its new tile. Without Accessibility
 he stands at ease, pane lowered, greyed out. Under Reduce Motion he holds
-still. **Settings ▸ Icon** swaps him for the screen-grid glyph below.
+still. **Icon ▸** swaps him for the screen-grid glyph below.
 
 **The screen grid**, the alternate icon, is a little display in the Menumon
 glyph style (shaded bezel on a stand, dark glass, ink outlines), shaped like
