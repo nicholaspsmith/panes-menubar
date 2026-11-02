@@ -24,6 +24,24 @@ final class CellKeysTests: XCTestCase {
         XCTAssertNil(CellKeys.label(for: GridCell(column: 0, row: 0), in: .fine))
     }
 
+    func testHalfCellsNumberedInHexRowMajor() {
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 0, row: 0)), "1")
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 7, row: 0)), "8")
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 0, row: 1)), "9")
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 1, row: 1)), "A")
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 6, row: 1)), "F")
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 7, row: 1)), "10")
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 2, row: 3)), "1B", "upper case")
+        XCTAssertEqual(HalfCellNumbers.label(for: GridCell(column: 7, row: 7)), "40")
+        let all = LayoutGrid.fine.cells.compactMap { HalfCellNumbers.label(for: $0) }
+        XCTAssertEqual(Set(all).count, 64, "every half-cell has its own number")
+    }
+
+    func testHalfCellNumbersAreForTheFineGridOnly() {
+        XCTAssertNil(HalfCellNumbers.label(for: GridCell(column: 0, row: 0), in: LayoutGrid()))
+        XCTAssertNil(HalfCellNumbers.label(for: GridCell(column: 8, row: 0)))
+    }
+
     func testNoDefaultShortcutKeyIsACellKey() {
         // C (center), [ ] ; ' (quarters), M (maximize), ⌫ and the arrows fire at once.
         for b in BindingStore.defaults {

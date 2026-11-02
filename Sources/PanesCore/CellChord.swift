@@ -41,6 +41,18 @@ public enum CellKeys {
     }
 }
 
+/// The numbers shown on the 8×8 half-cell grid (hold ⌥⌘⇧): 1 to 40 in
+/// upper-case hex, row-major from the top-left. Only a guide to the grid;
+/// half-cells have no keys of their own.
+public enum HalfCellNumbers {
+    public static func label(for cell: GridCell, in grid: LayoutGrid = .fine) -> String? {
+        guard grid == .fine, (0..<grid.columns).contains(cell.column), (0..<grid.rows).contains(cell.row) else {
+            return nil
+        }
+        return String(cell.row * grid.columns + cell.column + 1, radix: 16, uppercase: true)
+    }
+}
+
 /// The modifiers held to type cell keys: ⌥⌘ by default, the same as the
 /// other window shortcuts. A chord only starts on a cell key, so ⌥⌘ plus an
 /// arrow, [ ] ; ', M, C or ⌫ still acts at once.
