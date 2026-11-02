@@ -31,9 +31,9 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.7.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.8.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW section, open, with its Brightness, Contrast and Resolution sliders; the Night Shift section, open, with Enabled, Warmth, Schedule and a greyed On at 4:58 PM line; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
 
 ## Requirements
 
@@ -131,8 +131,8 @@ and never starts a chord.
 
 Clicking an item leaves the menu open, so you can try one layout after
 another. The exceptions are Quit and the items ending in "…", which open a
-window (Preferences…, Schedule…, Custom Colour…). Each section heading folds its
-rows away, the chevron pointing down while folded and up while open.
+window (Preferences…, Schedule…, Custom Colour…). Each section starts folded
+under its heading, the chevron pointing down while folded and up while open.
 
 - **One section per display** (see [Displays and brightness](#displays-and-brightness)),
   then **Night Shift** with its Warmth slider and **Schedule…** (see
@@ -203,8 +203,9 @@ tile by itself once the window leaves it.
 ## Displays and brightness
 
 The menu opens with one section per display, headed by its name, then
-Night Shift for the whole Mac. Each section folds under its heading, and
-Panes remembers which are open (per display):
+Night Shift for the whole Mac. Each section starts folded under its
+heading; click the heading to open it, and Panes remembers which you
+opened (per display):
 
 | Row | What it does |
 |-----|--------------|

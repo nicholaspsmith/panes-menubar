@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.8.0] - 2026-11-02
+
+### Changed
+
+- The display and Night Shift sections start folded, like Shortcuts. Open one and Panes remembers it.
+
 ## [1.7.0] - 2026-11-02
 
 ### Changed
