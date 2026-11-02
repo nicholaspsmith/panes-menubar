@@ -418,19 +418,23 @@ final class App: NSObject, NSApplicationDelegate {
         menu.addItem(gridItem)
         menu.addItem(.separator())
 
-        var group = WindowAction.allCases.first!.group
-        for action in WindowAction.allCases {
-            if action.group != group { menu.addItem(.separator()); group = action.group }
-            let item = NSMenuItem(title: action.label, action: #selector(performAction(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = action.rawValue
-            if let trigger = model.trigger(for: action), let key = MenuKeyEquivalent.string(for: trigger) {
-                item.keyEquivalent = key
-                item.keyEquivalentModifierMask = Self.flags(trigger.modifiers)
+        // The actions fold under one Shortcuts row, collapsed each time the
+        // menu opens; clicking it shows or hides them in place.
+        let shortcuts = makeShortcutItems()
+        let header = NSMenuItem()
+        let row = DisclosureRow(title: "Shortcuts", expanded: false, width: gridItem.view?.frame.width ?? 240)
+        row.onClick = { [weak menu, weak header, weak row] in
+            guard let menu, let header, let row else { return }
+            row.expanded.toggle()
+            if row.expanded {
+                let at = menu.index(of: header) + 1
+                for (i, item) in shortcuts.enumerated() { menu.insertItem(item, at: at + i) }
+            } else {
+                for item in shortcuts where item.menu === menu { menu.removeItem(item) }
             }
-            item.isEnabled = menuTarget.map { mover.canPerform(action, on: $0) } ?? false
-            menu.addItem(item)
         }
+        header.view = row
+        menu.addItem(header)
 
         if !trusted {
             menu.addItem(.separator())
@@ -468,6 +472,27 @@ final class App: NSObject, NSApplicationDelegate {
             icon.submenu = self.makeIconMenu()
             menu.addItem(icon)
         })
+    }
+
+    /// The window actions in their four groups (halves, quarters, maximize /
+    /// center / restore, next display), each group opened by a separator, so
+    /// the first also sits apart from the Shortcuts row above it.
+    private func makeShortcutItems() -> [NSMenuItem] {
+        var items: [NSMenuItem] = []
+        var group: Int?
+        for action in WindowAction.allCases {
+            if action.group != group { items.append(.separator()); group = action.group }
+            let item = NSMenuItem(title: action.label, action: #selector(performAction(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = action.rawValue
+            if let trigger = model.trigger(for: action), let key = MenuKeyEquivalent.string(for: trigger) {
+                item.keyEquivalent = key
+                item.keyEquivalentModifierMask = Self.flags(trigger.modifiers)
+            }
+            item.isEnabled = menuTarget.map { mover.canPerform(action, on: $0) } ?? false
+            items.append(item)
+        }
+        return items
     }
 
     /// Screen Grid, Major Pane, Armonitor; Monitor Lizard's meter shapes;

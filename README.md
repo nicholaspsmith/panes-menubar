@@ -31,9 +31,9 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.1.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.2.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the 8×8 layout grid, as wide as the separator lines above and below it; the window actions with their shortcuts; then Settings, Icon and Quit Panes"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
 
 ## Requirements
 
@@ -166,9 +166,12 @@ and never starts a chord.
   Cells under the front window are shaded in the accent colour, cells under
   other windows on that display lightly. The menu closes once the window is
   told where to go.
-- **The actions**, each showing its shortcut; clicking one applies it to the
-  window that was in front when the menu opened. Greyed when they do not
-  apply.
+- **Shortcuts**: the actions, folded under one row each time the menu
+  opens. Click it and they open below it, in place, in their four groups
+  (halves; quarters; Maximize, Center and Restore; Next Display), each showing
+  its shortcut; click it again to fold them away. Clicking an action applies
+  it to the window that was in front when the menu opened. Greyed when they
+  do not apply.
 - **⚠ Grant Accessibility…**: shown only until Panes is trusted.
 - **No window to arrange**: shown, greyed, when no movable window is in front.
 - **⚠ macOS Edge Tiling Is On…**: shown when Edge Snapping is on and so is

@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.2.0] - 2026-11-02
+
+### Changed
+
+- The window actions in the menu fold under one **Shortcuts** row. Click it to show the four groups below it, in place, and again to hide them; it starts folded each time the menu opens.
+
 ## [1.1.1] - 2026-11-01
 
 ### Fixed
