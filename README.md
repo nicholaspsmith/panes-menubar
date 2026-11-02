@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.10.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.11.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
 
@@ -344,8 +344,9 @@ running for the fix to hold.
   window sits.
 - **Armonitor**: the monitor lizard on his monitor, showing the main
   display's brightness and Night Shift.
-- **Arc, Gauge, Pie, Wedge**: plain meters of the main display's brightness,
-  in the colour picked below them in the same menu.
+- **Arc, Gauge**: plain meters of the main display's brightness, in the
+  colour picked below them. (Pie and Wedge went in 1.11.0; a saved choice of
+  either shows Arc.)
 
 **The Screen Grid** is a little display in the Menumon glyph style (shaded
 bezel on a stand, dark glass, ink outlines), shaped like the display the icon
@@ -523,7 +524,7 @@ XDR as it quits.
 Once, after that, Panes copies Monitor Lizard's settings into its own:
 Brightness Keys, XDR's off-on-battery choice, the Night Shift schedule, its
 warmth and saved place, and the meter colour. A setting Panes already has is
-never overwritten. A meter icon (Arc, Gauge, Pie or Wedge) carries over as
+never overwritten. A meter icon (Arc or Gauge; Pie and Wedge become Arc) carries over as
 Panes's icon if you had not picked one; Armonitor does not, so the Screen
 Grid stays the default (pick Armonitor in **Settings… ▸ Icon** to keep him in the bar).
 Monitor Lizard's own settings are left where they are.

@@ -100,7 +100,7 @@ final class SettingsModel: ObservableObject {
     /// The icons in the order the Icon submenu listed them.
     static let icons: [(title: String, choice: IconChoice)] =
         [("Screen Grid", .grid), ("Major Pane", .majorPane), ("Armonitor", .armonitor)]
-        + MeterStyle.proportional.map { ($0.title, IconChoice.meter($0.rawValue)) }
+        + IconChoice.meters.compactMap(MeterStyle.init(rawValue:)).map { ($0.title, IconChoice.meter($0.rawValue)) }
 
     var isMeter: Bool { if case .meter = current.icon { return true } else { return false } }
 }

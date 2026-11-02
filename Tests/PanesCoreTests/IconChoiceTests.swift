@@ -12,6 +12,12 @@ final class IconChoiceTests: XCTestCase {
     func testRoundTrip() { for c in [IconChoice.grid, .majorPane, .armonitor, .meter("arc")] {
         XCTAssertEqual(IconChoice(stored: c.stored, knownMeters: ["arc"]), c) } }
     func testOldMajorPaneKept() { XCTAssertEqual(IconChoice(stored: "major-pane", knownMeters: []), .majorPane) }
+    func testRetiredMetersReadAsArc() {
+        for s in ["meter:pie", "meter:wedge"] {
+            XCTAssertEqual(IconChoice(stored: s, knownMeters: Set(IconChoice.meters)), .meter("arc"))
+        }
+    }
+    func testOfferedMeters() { XCTAssertEqual(IconChoice.meters, ["arc", "gauge"]) }
     func testUnknownFallsBackToGrid() {
         for s in ["", "meter:", "meter:nope", "lizard", "GRID"] { XCTAssertEqual(IconChoice(stored: s, knownMeters: ["arc"]), .grid) } }
 }
