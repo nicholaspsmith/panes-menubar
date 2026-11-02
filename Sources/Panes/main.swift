@@ -57,7 +57,7 @@ final class App: NSObject, NSApplicationDelegate {
     /// The meter icons' shape and colour (StatusItemKit's `MeterStyle` and
     /// `MeterColorHex` keys). `iconChoice` says whether a meter shows at all.
     private let meterAppearance = MeterAppearance()
-    private static let knownMeters = Set(MeterStyle.proportional.map(\.rawValue))
+    private static let knownMeters = Set(IconChoice.meters)
     /// The Settings window's Icon: Screen Grid (also when nothing or something unknown is saved),
     /// Major Pane, Armonitor or a meter. Read once at launch; each pick saves it.
     private var iconChoice = IconChoice(stored: UserDefaults.standard.string(forKey: IconChoice.key),
@@ -556,7 +556,7 @@ final class App: NSObject, NSApplicationDelegate {
     /// What `choice` would put in the menu bar, for the Settings window's icon
     /// tiles: the same drawing, the grid and Major Pane from the live window
     /// map. The brightness icons are drawn at 65% rather than the live level,
-    /// so the shapes tell apart (Pie and Wedge are both full circles at 100%).
+    /// so the meters show a reading rather than a full ring.
     private func iconPreview(_ choice: IconChoice) -> NSImage {
         let fraction: CGFloat = 0.65
         switch choice {
@@ -573,8 +573,6 @@ final class App: NSObject, NSApplicationDelegate {
             let color = meterAppearance.color
             switch MeterStyle(rawValue: raw) {
             case .gauge: return MeterIcon.gauge(fraction: fraction, color: color)
-            case .pie: return MeterIcon.pie(fraction: fraction, color: color)
-            case .wedge: return MeterIcon.wedge(fraction: fraction, color: color)
             default: return MeterIcon.arc(fraction: fraction, color: color)
             }
         }

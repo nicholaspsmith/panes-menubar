@@ -26,15 +26,22 @@ public enum IconChoice: Hashable {
 
     private static let meterPrefix = "meter:"
 
-    /// - Parameter knownMeters: the meter shapes this build can draw; any
-    ///   other `meter:` value reads as the grid.
+    /// The meter shapes Panes offers. Pie and Wedge were dropped in 1.11.0.
+    public static let meters = ["arc", "gauge"]
+    /// Dropped meters and the one a saved choice of them now reads as.
+    public static let retiredMeters = ["pie": "arc", "wedge": "arc"]
+
+    /// - Parameter knownMeters: the meter shapes this build can draw; a
+    ///   retired one reads as its replacement, any other `meter:` value as
+    ///   the grid.
     public init(stored: String?, knownMeters: Set<String>) {
         switch stored {
         case "major-pane": self = .majorPane
         case "armonitor": self = .armonitor
         case let s? where s.hasPrefix(Self.meterPrefix):
             let raw = String(s.dropFirst(Self.meterPrefix.count))
-            self = knownMeters.contains(raw) ? .meter(raw) : .grid
+            let shape = Self.retiredMeters[raw] ?? raw
+            self = knownMeters.contains(shape) ? .meter(shape) : .grid
         default: self = .grid
         }
     }
