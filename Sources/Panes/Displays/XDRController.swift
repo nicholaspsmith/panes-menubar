@@ -46,9 +46,13 @@ final class XDRController {
     var boost: Float = 0 {
         didSet { update() }
     }
+    /// Read through to UserDefaults rather than once at init: the controller
+    /// exists before the Monitor Lizard migration copies this key in.
+    /// Safe by default: an absent key reads as "switch off on battery".
     var offOnBattery: Bool {
-        didSet {
-            UserDefaults.standard.set(offOnBattery, forKey: Self.offOnBatteryKey)
+        get { UserDefaults.standard.object(forKey: Self.offOnBatteryKey) as? Bool ?? true }
+        set {
+            UserDefaults.standard.set(newValue, forKey: Self.offOnBatteryKey)
             switchOffIfOnBattery()
             update()
         }
@@ -78,11 +82,6 @@ final class XDRController {
     private var headroomTimer: Timer?
     private static let headroomInterval: TimeInterval = 0.25
     private var powerSource: CFRunLoopSource?
-
-    init() {
-        // Safe by default: an absent key reads as "switch off on battery".
-        offOnBattery = UserDefaults.standard.object(forKey: Self.offOnBatteryKey) as? Bool ?? true
-    }
 
     func start() {
         onBattery = Self.isOnBattery()

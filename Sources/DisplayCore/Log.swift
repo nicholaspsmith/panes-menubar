@@ -16,4 +16,5 @@ public enum Log {
     public static let tvrole = Logger(subsystem: subsystem, category: "tvrole")
     public static let menu = Logger(subsystem: subsystem, category: "menu")
     public static let xdr = Logger(subsystem: subsystem, category: "xdr")
+    public static let migration = Logger(subsystem: subsystem, category: "migration")
 }

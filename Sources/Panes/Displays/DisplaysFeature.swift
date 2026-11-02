@@ -96,9 +96,13 @@ final class DisplaysFeature: NSObject {
     /// off), so the owner hands its tap the new binding set.
     var onBrightnessBindingsChanged: (() -> Void)?
 
+    /// Whether `start()` has run. Panes starts the feature only after the
+    /// Monitor Lizard cut-over, so until then ML may still own the keys.
+    private(set) var isStarted = false
+
     /// The brightness keys' bindings for the owner's `HotkeyTap`, after its
-    /// own. Empty while the Brightness Keys are off.
-    var brightnessBindings: [Binding] { brightnessKeys.bindings }
+    /// own. Empty while the Brightness Keys are off, and before `start()`.
+    var brightnessBindings: [Binding] { isStarted ? brightnessKeys.bindings : [] }
 
     /// A press the owner's tap matched. True to swallow it; false for a token
     /// that isn't a brightness key's, or a press that goes on to macOS.
@@ -114,6 +118,7 @@ final class DisplaysFeature: NSObject {
     }
 
     func start() {
+        isStarted = true
         model.onChange = { [weak self] in self?.modelChanged() }
         model.onWrite = { [weak self] in self?.flickTongueIfShown() }
         // Dispatched async so the admin dialog in `fixTVRole` never runs from

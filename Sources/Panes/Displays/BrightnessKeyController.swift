@@ -42,10 +42,15 @@ final class BrightnessKeyController {
     /// so the tap's owner can hand the tap its new binding set.
     var onBindingsChanged: (() -> Void)?
 
+    /// Read through to UserDefaults rather than once at init: the Settings
+    /// menu can make this controller before the Monitor Lizard migration has
+    /// copied the key in. On by default: an absent key reads as enabled.
     var isEnabled: Bool {
-        didSet {
-            UserDefaults.standard.set(isEnabled, forKey: Self.enabledKey)
-            if isEnabled != oldValue { onBindingsChanged?() }
+        get { UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true }
+        set {
+            let oldValue = isEnabled
+            UserDefaults.standard.set(newValue, forKey: Self.enabledKey)
+            if newValue != oldValue { onBindingsChanged?() }
         }
     }
 
@@ -61,8 +66,6 @@ final class BrightnessKeyController {
         self.stepExternal = stepExternal
         self.stepDim = stepDim
         self.stepBoost = stepBoost
-        // On by default: an absent key reads as enabled.
-        isEnabled = UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true
     }
 
     /// A press the shared tap matched. Returns true to swallow it, false for

@@ -27,6 +27,8 @@ final class App: NSObject, NSApplicationDelegate {
     private var tap: HotkeyTap!
     /// The displays, Night Shift and the brightness keys.
     private var displayFeature: DisplaysFeature!
+    /// The Monitor Lizard cut-over, while it runs (launch only).
+    private var cutover: MonitorLizardCutover?
     private let chordTap = ChordTap()
     /// The grid that covers the screen while ⌥⌘ is held.
     private let overlay = GridOverlay()
@@ -138,7 +140,15 @@ final class App: NSObject, NSApplicationDelegate {
 
         if !tap.isTrusted { tap.requestTrust() }
         startIfTrusted()
-        startDisplays()
+        // Monitor Lizard may still be running (parity installs Panes over it):
+        // quit it and bring its settings over before the displays feature, and
+        // with it the brightness keys, starts.
+        let cutover = MonitorLizardCutover()
+        self.cutover = cutover
+        cutover.run { [weak self] in
+            self?.cutover = nil
+            self?.startDisplays()
+        }
 
         // Redraw the icon when windows are likely to have moved, besides the poll.
         let ws = NSWorkspace.shared.notificationCenter
@@ -159,11 +169,25 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     /// Starts the displays feature: DDC, Night Shift and its schedule, XDR and
-    /// Dim. The one place it starts.
+    /// Dim. The one place it starts, run when the Monitor Lizard cut-over is done.
     private func startDisplays() {
+        reloadIconChoice()
         displayFeature.start()
+        // The brightness keys join the tap only now (none before `start()`).
+        updateTapBindings()
         // start() doesn't report its first reading; draw from it now.
         displayFeature.refreshIcon()
+    }
+
+    /// The migration may have brought Monitor Lizard's meter over as `IconStyle`.
+    private func reloadIconChoice() {
+        guard let stored = UserDefaults.standard.string(forKey: IconChoice.key),
+              stored != iconChoice.stored else { return }
+        iconChoice = IconChoice(stored: stored, knownMeters: Self.knownMeters)
+        syncMeterStyle()
+        slide?.cancel(); slide = nil
+        mascot?.enabled = mascotChosen
+        refreshIcon(force: true)
     }
 
     // MARK: - Tap lifecycle
