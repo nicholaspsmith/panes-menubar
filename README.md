@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.2.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.3.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
 
@@ -60,7 +60,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 | `⌥⌘N` | move to the next display, keeping the window's relative frame |
 | `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two, when you let go of `⌥⌘` (see below) |
 | hold `⌥⌘` | a 4×4 grid over the screen: click or drag across cells (see below) |
-| hold `⌥⌘⇧` | the hold-`⌥⌘` grid in half-cells, 8×8 (the menu's grid is always 8×8) |
+| hold `⌥⌘⇧` | the hold-`⌥⌘` grid in half-cells, 8×8, numbered 1–40 in hex (the menu's grid is always 8×8) |
 
 Each acts on the focused window of the frontmost app. A shortcut is
 swallowed only when it applies: with no movable window in front, nothing to
@@ -143,8 +143,11 @@ The menu's grid is always half-cells: each 4×4 cell split into its own 2×2,
 an 8×8 grid, and holding keys while the menu is open does not change it. On
 the hold-⌥⌘ grid, hold `⌥⌘⇧` for the same half-cells. Click one, or drag
 across several, to fill that area exactly as with the 4×4 grid; shading
-follows the finer cells. Let go of `⇧` on the hold-⌥⌘ grid to return to 4×4
-(cell-key labels show only there). `⌥⌘⇧` on its own is never taken from apps
+follows the finer cells. On the hold-⌥⌘ grid each half-cell shows its number, smaller than the cell
+keys: 1 to 40 in hex, row by row from the top-left (`1`–`8` across the top,
+`9`–`10` the next row, down to `40` bottom-right). They are only a guide:
+half-cells have no keys to type. Let go of `⇧` to return to 4×4 and its cell
+keys. `⌥⌘⇧` on its own is never taken from apps
 and never starts a chord.
 
 <p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset; the cell-key modifier; and how long to hold ⌥⌘ for the grid"></p>

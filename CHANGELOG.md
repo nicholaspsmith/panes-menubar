@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.3.0] - 2026-11-02
+
+### Added
+
+- Holding ⌥⌘⇧ numbers the 8×8 half-cell grid: 1 to 40 in hex, row by row from the top-left, in a smaller font than the 4×4 grid's cell keys.
+
 ## [1.2.0] - 2026-11-02
 
 ### Changed
