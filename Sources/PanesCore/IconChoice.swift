@@ -4,12 +4,12 @@
 //
 // Copyright (c) 2026 Nicholas Smith
 
-/// Which icon Panes shows in the menu bar (Icon ▸), as stored under `key`.
+/// Which icon Panes shows in the menu bar (Settings ▸ Icon), as stored under `key`.
 ///
 /// Nothing stored, or anything this build doesn't know (an empty string, a
 /// meter shape it doesn't draw, a typo), is the Screen Grid: an unreadable
 /// choice never leaves the bar blank.
-public enum IconChoice: Equatable {
+public enum IconChoice: Hashable {
     /// The display's windows drawn as tiles. The default.
     case grid
     /// Major Pane, the mascot.
