@@ -312,15 +312,15 @@ final class DisplaysFeature: NSObject {
         }
         for (i, entry) in model.entries.enumerated() {
             if i > 0 { menu.addItem(.separator()) }
-            addDisplayBlock(entry, to: menu)
+            addDisplaySection(entry, to: menu)
         }
 
         menu.addItem(.separator())
         if let ns = model.nightShift, ns.isAvailable {
             let s = ns.status()
-            menu.addItem(ToggleMenuItem.make(title: "Night Shift", isOn: s.enabled) { [weak self] on in
+            var items = [ToggleMenuItem.make(title: "Enabled", isOn: s.enabled) { [weak self] on in
                 self?.setNightShift(on)
-            })
+            }]
             let warmth = NSMenuItem()
             let shownWarmth = scheduler?.sliderWarmth ?? s.strength
             warmth.view = SliderRow(title: "Warmth", symbol: "thermometer.sun", value: Double(shownWarmth) * 100, maximum: 100,
@@ -328,13 +328,14 @@ final class DisplaysFeature: NSObject {
                 if let scheduler = self?.scheduler { scheduler.warmthSliderMoved(to: Float(v / 100)) }
                 else { _ = ns.setStrength(Float(v / 100)) }
             }
-            menu.addItem(warmth)
+            items.append(warmth)
             if let scheduler {
                 let item = actionItem("Schedule…", #selector(showSchedule))
                 item.state = scheduler.schedule.isEnabled ? .on : .off
-                menu.addItem(item)
-                if let line = scheduleLine(scheduler) { menu.addItem(disabledItem(line)) }
+                items.append(item)
+                if let line = scheduleLine(scheduler) { items.append(disabledItem(line)) }
             }
+            MenuSection.add(title: "Night Shift", key: "nightShift", items: items, to: menu)
         } else {
             menu.addItem(disabledItem("Night Shift unavailable on this macOS"))
         }
@@ -349,8 +350,13 @@ final class DisplaysFeature: NSObject {
         ) { [weak self] on in self?.brightnessKeys.isEnabled = on }]
     }
 
+    /// A line of information: greyed and not selectable, like a native
+    /// section header. (The menu doesn't autoenable, so an item without an
+    /// action would otherwise highlight and do nothing.)
     func disabledItem(_ title: String) -> NSMenuItem {
-        NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        return item
     }
 
     func actionItem(_ title: String, _ selector: Selector, key: String = "") -> NSMenuItem {

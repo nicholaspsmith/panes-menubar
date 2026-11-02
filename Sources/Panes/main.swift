@@ -27,6 +27,10 @@ final class App: NSObject, NSApplicationDelegate {
     private var tap: HotkeyTap!
     /// The displays, Night Shift and the brightness keys.
     private var displayFeature: DisplaysFeature!
+    /// The open menu's grid and window actions, updated in place as items
+    /// move the window (the menu stays open).
+    private weak var menuGrid: GridMenuView?
+    private var shortcutItems: [NSMenuItem] = []
     /// The Monitor Lizard cut-over, while it runs (launch only).
     private var cutover: MonitorLizardCutover?
     private let modifierTap = ModifierTap()
@@ -402,27 +406,16 @@ final class App: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
 
         let gridItem = NSMenuItem()
-        gridItem.view = makeGrid()
+        let grid = makeGrid()
+        menuGrid = grid
+        gridItem.view = grid
         menu.addItem(gridItem)
         menu.addItem(.separator())
 
-        // The actions fold under one Shortcuts row, collapsed each time the
-        // menu opens; clicking it shows or hides them in place.
-        let shortcuts = makeShortcutItems()
-        let header = NSMenuItem()
-        let row = DisclosureRow(title: "Shortcuts", expanded: false, width: gridItem.view?.frame.width ?? 240)
-        row.onClick = { [weak menu, weak header, weak row] in
-            guard let menu, let header, let row else { return }
-            row.expanded.toggle()
-            if row.expanded {
-                let at = menu.index(of: header) + 1
-                for (i, item) in shortcuts.enumerated() { menu.insertItem(item, at: at + i) }
-            } else {
-                for item in shortcuts where item.menu === menu { menu.removeItem(item) }
-            }
-        }
-        header.view = row
-        menu.addItem(header)
+        // The actions fold under one Shortcuts row, folded each time the
+        // menu opens.
+        shortcutItems = makeShortcutItems()
+        MenuSection.add(title: "Shortcuts", defaultExpanded: false, items: shortcutItems, to: menu)
 
         if !trusted {
             menu.addItem(.separator())
@@ -460,6 +453,21 @@ final class App: NSObject, NSApplicationDelegate {
             icon.submenu = self.makeIconMenu()
             menu.addItem(icon)
         })
+        // Every item but Quit and the "…" ones keeps the menu open.
+        KeepOpen.apply(to: menu.items)
+    }
+
+    /// After a kept-open item or a grid cell moved the window: shade where it
+    /// is going and re-check which actions apply (Restore now does).
+    private func refreshOpenMenu() {
+        guard let target = menuTarget else { return }
+        menuGrid?.setActiveFrame(mover.currentFrame(target))
+        for item in shortcutItems {
+            guard let raw = item.representedObject as? String, let action = WindowAction(rawValue: raw) else { continue }
+            item.isEnabled = mover.canPerform(action, on: target)
+            (item.view as? MenuRowView)?.updateColors()
+            item.view?.needsDisplay = true
+        }
     }
 
     /// The window actions in their four groups (halves, quarters, maximize /
@@ -523,6 +531,7 @@ final class App: NSObject, NSApplicationDelegate {
         return GridMenuView(model: model) { [weak self] grid, selection in
             guard let self, let target = self.menuTarget else { return }
             self.mover.move(target, to: grid.frame(for: selection, in: visible), visible: visible)
+            self.refreshOpenMenu()
         }
     }
 
@@ -551,6 +560,7 @@ final class App: NSObject, NSApplicationDelegate {
         guard let raw = sender.representedObject as? String, let action = WindowAction(rawValue: raw),
               let target = menuTarget else { return }
         mover.perform(action, on: target)
+        refreshOpenMenu()
     }
 
     @objc private func grantTrust() {

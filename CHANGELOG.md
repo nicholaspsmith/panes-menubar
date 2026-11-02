@@ -8,6 +8,19 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.7.0] - 2026-11-02
+
+### Changed
+
+- Clicking an item no longer closes the menu: pick a grid cell, an action, an icon or a resolution and the menu stays open, the grid's shading following the window. Quit and the items ending in "…" (they open a window) still close it.
+- Each display's section and the Night Shift section fold under their headings, like Shortcuts. Panes remembers which are open.
+- Section headings show a chevron pointing down while folded and up while open, as in Homestead.
+- Night Shift's on/off checkbox, now inside its section, is called Enabled.
+
+### Fixed
+
+- The "On at …" / "Off at …" schedule line is grey information, as the display names were, instead of an item that highlighted and did nothing.
+
 ## [1.6.0] - 2026-11-02
 
 - The layout grid in the menu is 40% taller, so its cells are easier to hit.

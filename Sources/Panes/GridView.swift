@@ -65,7 +65,7 @@ class GridView: NSView {
     /// How far the backing panel reaches past the cells on every side.
     static let panelOutset: CGFloat = 2
 
-    let model: Model
+    private(set) var model: Model
     let style: Style
     private let onSelect: (LayoutGrid, GridSelection) -> Void
     private(set) var grid = LayoutGrid()
@@ -96,6 +96,12 @@ class GridView: NSView {
     /// Switch between the 4×4 and the 8×8 grid (drops any selection).
     func setFine(_ fine: Bool) {
         if fine != isFine { setGrid(fine ? .fine : LayoutGrid()) }
+    }
+
+    /// Shade the target window's new frame (it moved while the menu stayed open).
+    func setActiveFrame(_ frame: CGRect?) {
+        model.activeFrame = frame
+        setGrid(grid)
     }
 
     /// Forget a drag in progress (the overlay going away mid-drag).
@@ -252,8 +258,8 @@ class GridView: NSView {
 /// not change it), as wide as the menu's separator lines above and below it
 /// however wide the menu is, and 1.4 times as tall as a 216 pt grid shaped
 /// like the target display's visible frame. The cells stretch with the width, so the
-/// aspect ratio is only roughly the display's. The menu closes once a cell is
-/// picked.
+/// aspect ratio is only roughly the display's. The menu stays open once a
+/// cell is picked, shading the window's new frame.
 final class GridMenuView: GridView {
     static let width: CGFloat = 248
 
@@ -285,9 +291,4 @@ final class GridMenuView: GridView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
-
-    override func mouseUp(with event: NSEvent) {
-        super.mouseUp(with: event)
-        enclosingMenuItem?.menu?.cancelTracking()
-    }
 }
