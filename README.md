@@ -33,12 +33,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 
 **Version 1.0.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The window half of the Panes menu before 1.0.1: the old 4×4 layout grid with its cell keys (the menu now shows the 8×8 half-cell grid, centred), the window actions with their shortcuts, then Settings and Quit"></p>
-
-(The screenshot predates 1.0.0: the menu now opens with a section per
-display and Night Shift above the grid, the grid is the 8×8 half-cell grid,
-centred, and there is an Icon submenu below Settings. See
-[The menu](#the-menu).)
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the centred 8×8 layout grid; the window actions with their shortcuts; then Settings, Icon and Quit Panes"></p>
 
 ## Requirements
 
@@ -151,8 +146,6 @@ across several, to fill that area exactly as with the 4×4 grid; shading
 follows the finer cells. Let go of `⇧` on the hold-⌥⌘ grid to return to 4×4
 (cell-key labels show only there). `⌥⌘⇧` on its own is never taken from apps
 and never starts a chord.
-
-![The menu's grid in half-cells](docs/menu-fine.png)
 
 <p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset; the cell-key modifier; and how long to hold ⌥⌘ for the grid"></p>
 
