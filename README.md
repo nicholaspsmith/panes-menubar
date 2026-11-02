@@ -33,7 +33,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 
 **Version 1.11.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings… and Quit Panes"></p>
 
 ## Requirements
 
@@ -109,7 +109,7 @@ were in keeps focus throughout.
 
 Turn it off, or set the delay, in **Settings… ▸ General ▸ Grid on Hold ⌥⌘**.
 
-![The grid on hold ⌥⌘](docs/overlay.png)
+![The grid on hold ⌥⌘: sixteen cells numbered 1 to 10 in hex, the front window's cells lit](docs/overlay.png)
 
 ### Half-cells
 
