@@ -341,13 +341,11 @@ final class DisplaysFeature: NSObject {
         }
     }
 
-    /// Rows for the Settings submenu.
-    func settingsItems() -> [NSMenuItem] {
-        // The keyboard's brightness keys step the main monitor over DDC.
-        [ToggleMenuItem.make(
-            title: "Brightness Keys", isOn: brightnessKeys.isEnabled,
-            toolTip: "The keyboard's brightness keys change the main monitor's brightness"
-        ) { [weak self] on in self?.brightnessKeys.isEnabled = on }]
+    /// Whether the keyboard's brightness keys step the main monitor over DDC
+    /// (the Settings window's Brightness Keys).
+    var brightnessKeysEnabled: Bool {
+        get { brightnessKeys.isEnabled }
+        set { brightnessKeys.isEnabled = newValue }
     }
 
     /// A line of information: greyed and not selectable, like a native

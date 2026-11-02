@@ -45,23 +45,20 @@ final class App: NSObject, NSApplicationDelegate {
         get { UserDefaults.standard.object(forKey: Self.holdGridKey) as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: Self.holdGridKey) }
     }
-    private var prefs: PreferencesWindowController?
+    private var settingsWindow: SettingsWindowController?
     private var trustTimer: Timer?
     private var pollCount = 0
     private var iconSignature: Int?
     /// Panes's turn in the minute cue: the windows slide into their tiles.
     private var minuteCue: MinuteCue!
     private var slide: IconAnimation?
-    /// Major Pane, when he is the icon (Icon ▸ Major Pane).
+    /// Major Pane, when he is the icon (Settings ▸ Icon ▸ Major Pane).
     private var mascot: MascotController?
     /// The meter icons' shape and colour (StatusItemKit's `MeterStyle` and
     /// `MeterColorHex` keys). `iconChoice` says whether a meter shows at all.
     private let meterAppearance = MeterAppearance()
-    /// StatusItemKit's colour presets and Custom Colour…, which Icon ▸ borrows.
-    /// Kept: it is those items' target.
-    private var colourMenu: AppearanceMenu!
     private static let knownMeters = Set(MeterStyle.proportional.map(\.rawValue))
-    /// Icon ▸: Screen Grid (also when nothing or something unknown is saved),
+    /// The Settings window's Icon: Screen Grid (also when nothing or something unknown is saved),
     /// Major Pane, Armonitor or a meter. Read once at launch; each pick saves it.
     private var iconChoice = IconChoice(stored: UserDefaults.standard.string(forKey: IconChoice.key),
                                         knownMeters: App.knownMeters) {
@@ -96,7 +93,6 @@ final class App: NSObject, NSApplicationDelegate {
         yieldClient.start()
         // Before anything can refresh the icon (the Menu Crane 1.3.0 lesson).
         syncMeterStyle()
-        colourMenu = AppearanceMenu(appearance: meterAppearance, styles: []) { [weak self] in self?.drawDisplayIcon() }
         let mascot = MascotController(status: status)
         mascot.enabled = mascotChosen
         mascot.start()
@@ -435,24 +431,13 @@ final class App: NSObject, NSApplicationDelegate {
             menu.addItem(warn)
         }
 
-        SettingsMenu.addFooter(to: menu, appName: "Panes", items: { sub in
-            // Checkboxes keep the menu open (StatusItemKit's ToggleMenuItem).
-            sub.addItem(ToggleMenuItem.make(
-                title: "Edge Snapping", isOn: self.edgeSnapping,
-                toolTip: "Drag a window to a display edge or corner to snap it there"
-            ) { [weak self] on in self?.setEdgeSnapping(on) })
-            sub.addItem(ToggleMenuItem.make(
-                title: "Grid on Hold ⌥⌘", isOn: self.holdGridEnabled,
-                toolTip: "Hold ⌥⌘ on its own and a grid covers the screen; click or drag across cells"
-            ) { [weak self] on in self?.setHoldGrid(on) })
-            for item in self.displayFeature.settingsItems() { sub.addItem(item) }
-            sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
-        }, belowSettings: { menu in
-            // Icon sits in the main menu, right below Settings.
-            let icon = NSMenuItem(title: "Icon", action: nil, keyEquivalent: "")
-            icon.submenu = self.makeIconMenu()
-            menu.addItem(icon)
-        })
+        // The foot: Settings… (the window that holds every setting, as in Mac
+        // Daddy), then Quit.
+        menu.addItem(.separator())
+        menu.addItem(actionItem("Settings…", #selector(openSettings), key: ","))
+        let quit = NSMenuItem(title: "Quit Panes", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        quit.target = NSApp
+        menu.addItem(quit)
         // Every item but Quit and the "…" ones keeps the menu open.
         KeepOpen.apply(to: menu.items)
     }
@@ -489,30 +474,6 @@ final class App: NSObject, NSApplicationDelegate {
             items.append(item)
         }
         return items
-    }
-
-    /// Screen Grid, Major Pane, Armonitor; Monitor Lizard's meter shapes;
-    /// then StatusItemKit's colour presets and Custom Colour… for the meters.
-    private func makeIconMenu() -> NSMenu {
-        let pick = NSMenu()
-        let choices: [(String, IconChoice)] = [("Screen Grid", .grid), ("Major Pane", .majorPane), ("Armonitor", .armonitor)]
-        let meters = MeterStyle.proportional.map { ($0.title, IconChoice.meter($0.rawValue)) }
-        for (i, (title, choice)) in (choices + meters).enumerated() {
-            if i == choices.count { pick.addItem(.separator()) }
-            let item = actionItem(title, #selector(chooseIcon(_:)))
-            item.representedObject = choice.stored
-            item.state = iconChoice == choice ? .on : .off
-            pick.addItem(item)
-        }
-        // AppearanceMenu with no shapes builds just a separator, the presets
-        // and Custom Colour…; move them over (an item lives in one menu only).
-        if let colours = colourMenu.menuItem().submenu {
-            for item in colours.items {
-                colours.removeItem(item)
-                pick.addItem(item)
-            }
-        }
-        return pick
     }
 
     private func makeGrid() -> GridMenuView {
@@ -583,8 +544,8 @@ final class App: NSObject, NSApplicationDelegate {
         if !holdGridEnabled { apply(holdGrid.dismissed()) }
     }
 
-    @objc private func chooseIcon(_ sender: NSMenuItem) {
-        iconChoice = IconChoice(stored: sender.representedObject as? String, knownMeters: Self.knownMeters)
+    private func chooseIcon(_ choice: IconChoice) {
+        iconChoice = choice
         syncMeterStyle()
         slide?.cancel(); slide = nil
         if iconChoice != .armonitor { displayFeature.cancelIconLap() }
@@ -592,9 +553,26 @@ final class App: NSObject, NSApplicationDelegate {
         refreshIcon(force: true)        // draws the chosen icon from how things are now
     }
 
-    @objc private func openPrefs() {
-        if prefs == nil { prefs = PreferencesWindowController(model: model) }
-        prefs?.show()
+    @objc private func openSettings() {
+        if settingsWindow == nil {
+            let settings = SettingsModel(bindings: model, hooks: .init(
+                read: { [weak self] in
+                    guard let self else { return .init() }
+                    return .init(edgeSnapping: self.edgeSnapping, holdGrid: self.holdGridEnabled,
+                                 brightnessKeys: self.displayFeature.brightnessKeysEnabled,
+                                 icon: self.iconChoice, colorHex: self.meterAppearance.colorHex)
+                },
+                setEdgeSnapping: { [weak self] in self?.setEdgeSnapping($0) },
+                setHoldGrid: { [weak self] in self?.setHoldGrid($0) },
+                setBrightnessKeys: { [weak self] in self?.displayFeature.brightnessKeysEnabled = $0 },
+                setIcon: { [weak self] in self?.chooseIcon($0) },
+                setColor: { [weak self] in
+                    self?.meterAppearance.color = $0
+                    self?.drawDisplayIcon()
+                }))
+            settingsWindow = SettingsWindowController(model: settings)
+        }
+        settingsWindow?.show()
     }
 }
 

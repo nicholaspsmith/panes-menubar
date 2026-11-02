@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.9.0] - 2026-11-02
+
+### Changed
+
+- Every setting now lives in one Settings window (Settings…, ⌘,), as in Mac Daddy. The General tab has Start at Login, Edge Snapping, Brightness Keys, the menu-bar icon and its colour, and Grid on Hold ⌥⌘ with its delay. The Shortcuts tab rebinds the window actions. The menu's Settings and Icon submenus are gone.
+
 ## [1.8.0] - 2026-11-02
 
 ### Changed
