@@ -61,7 +61,7 @@ final class HoldGridTests: XCTestCase {
 
     func testAnyKeyHidesAndBlocks() {
         var h = shown()
-        XCTAssertEqual(h.keyDown(), .hide)       // a cell key or a shortcut
+        XCTAssertEqual(h.keyDown(), .hide)       // a letter or a shortcut
         XCTAssertEqual(h.phase, .blocked)
         XCTAssertEqual(h.tick(at: 20), .none)
     }

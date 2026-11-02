@@ -29,7 +29,7 @@ final class App: NSObject, NSApplicationDelegate {
     private var displayFeature: DisplaysFeature!
     /// The Monitor Lizard cut-over, while it runs (launch only).
     private var cutover: MonitorLizardCutover?
-    private let chordTap = ChordTap()
+    private let modifierTap = ModifierTap()
     /// The grid that covers the screen while ⌥⌘ is held.
     private let overlay = GridOverlay()
     private var holdGrid = HoldGrid()
@@ -112,14 +112,8 @@ final class App: NSObject, NSApplicationDelegate {
             self?.refreshIcon(force: true)
             if self?.mascotChosen == true { self?.mascot?.bark() }
         }
-        chordTap.chord = model.chordModifier
-        model.onChordChange = { [weak self] chord in self?.chordTap.chord = chord }
-        chordTap.reservedKeys = { [weak self] chord in
-            ChordLogic.reservedKeys(self?.model.bindings ?? [], chord: chord)
-        }
-        chordTap.isSuspended = { [weak self] in self?.model.isRecording ?? false }
-        chordTap.onModifiers = { [weak self] held in self?.holdModifiers(held) }
-        chordTap.onAnyKeyDown = { [weak self] in self?.holdKeyDown() }
+        modifierTap.onModifiers = { [weak self] held in self?.holdModifiers(held) }
+        modifierTap.onAnyKeyDown = { [weak self] in self?.holdKeyDown() }
         overlay.onPick = { [weak self] window, frame, visible in
             guard let self else { return }
             self.apply(self.holdGrid.dismissed())
@@ -132,10 +126,6 @@ final class App: NSObject, NSApplicationDelegate {
         status.onMenuDidClose = { [weak self] in
             self?.menuOpen = false
             self?.displayFeature.refreshIcon()
-        }
-        chordTap.onFinish = { [mover] window, selection, display in
-            mover.move(window, to: LayoutGrid().frame(for: selection, in: display.visibleFrame),
-                       visible: display.visibleFrame)
         }
 
         if !tap.isTrusted { tap.requestTrust() }
@@ -209,7 +199,7 @@ final class App: NSObject, NSApplicationDelegate {
             return
         }
         if !tap.isRunning { tap.start() }
-        if !chordTap.isRunning { chordTap.start() }
+        if !modifierTap.isRunning { modifierTap.start() }
         if edgeSnapping { snapper.start() }
         trustTimer?.invalidate()
         trustTimer = nil
@@ -235,10 +225,8 @@ final class App: NSObject, NSApplicationDelegate {
         if pollCount % 4 == 0, let tap, tap.isTrusted, tap.isRunning {
             tap.stop()
             tap.start()
-            if !chordTap.isBusy {
-                chordTap.stop()
-                chordTap.start()
-            }
+            modifierTap.stop()
+            modifierTap.start()
         }
     }
 

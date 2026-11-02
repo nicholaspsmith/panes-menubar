@@ -12,8 +12,8 @@ import PanesCore
 /// Click a cell to fill it, or drag across cells to fill the rectangle they
 /// make; the selection highlights live and `onSelect` gets it on release.
 ///
-/// 4×4 with each cell labelled with its cell key, or the 8×8 half-cell grid
-/// (numbered 1–40 in hex on the overlay, unlabelled in the menu). Cells under windows are shaded at whichever resolution is
+/// 4×4 or the 8×8 half-cell grid; on the overlay each cell shows its number
+/// in hex (`GridNumbers`), the menu's grid is unlabelled. Cells under windows are shaded at whichever resolution is
 /// showing: the target window's in the accent colour, other windows' in a
 /// light tint.
 class GridView: NSView {
@@ -32,9 +32,8 @@ class GridView: NSView {
         var insets: NSEdgeInsets
         var gap: (coarse: CGFloat, fine: CGFloat)
         var radius: (coarse: CGFloat, fine: CGFloat)
-        var labelSize: CGFloat
-        /// The 8×8 grid's hex numbers (nil: unnumbered).
-        var fineLabelSize: CGFloat?
+        /// The cells' hex numbers on the 4×4 and the 8×8 grid (nil: unnumbered).
+        var labelSize: (coarse: CGFloat, fine: CGFloat)?
         /// The panel behind the cells (nil: none).
         var backing: NSColor?
         var emptyCell: NSColor
@@ -50,12 +49,12 @@ class GridView: NSView {
         /// are inset from them by the panel's outset.
         static let menu = Style(insets: NSEdgeInsets(top: 6, left: GridMenuView.separatorInsets.left + GridView.panelOutset,
                                                      bottom: 6, right: GridMenuView.separatorInsets.right + GridView.panelOutset),
-                                gap: (3, 2), radius: (4, 2.5), labelSize: 11, fineLabelSize: nil,
+                                gap: (3, 2), radius: (4, 2.5), labelSize: nil,
                                 backing: NSColor.labelColor.withAlphaComponent(0.06),
                                 emptyCell: NSColor.labelColor.withAlphaComponent(0.08),
                                 cellBorder: nil, label: .secondaryLabelColor)
         static let overlay = Style(insets: NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0),
-                                   gap: (10, 6), radius: (12, 8), labelSize: 40, fineLabelSize: 20,
+                                   gap: (10, 6), radius: (12, 8), labelSize: (40, 20),
                                    backing: nil,
                                    emptyCell: NSColor(white: 1, alpha: 0.01),
                                    cellBorder: NSColor(white: 1, alpha: 0.1),
@@ -182,19 +181,11 @@ class GridView: NSView {
         }
     }
 
-    /// The cell's key on the 4×4 grid, or its hex number on the 8×8 one
-    /// (smaller, and only where the style numbers it), centred; white on
-    /// accent-shaded cells.
+    /// The cell's hex number, centred, smaller on the 8×8 grid; white on
+    /// accent-shaded cells. Only where the style numbers cells.
     private func drawLabel(for cell: GridCell, in r: NSRect, onAccent: Bool) {
-        let label: String
-        let fontSize: CGFloat
-        if let key = CellKeys.label(for: cell, in: grid) {
-            (label, fontSize) = (key, style.labelSize)
-        } else if let size = style.fineLabelSize, let number = HalfCellNumbers.label(for: cell, in: grid) {
-            (label, fontSize) = (number, size)
-        } else {
-            return
-        }
+        guard let sizes = style.labelSize, let label = GridNumbers.label(for: cell, in: grid) else { return }
+        let fontSize = isFine ? sizes.fine : sizes.coarse
         let color: NSColor = onAccent ? .white : style.label
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .semibold),
