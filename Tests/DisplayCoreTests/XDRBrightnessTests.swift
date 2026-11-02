@@ -9,59 +9,26 @@ import XCTest
 
 final class XDRBrightnessTests: XCTestCase {
     func testFactorSpansOneToTheHeadroom() {
-        XCTAssertEqual(XDRGamma.factor(boost: 0, headroom: 1.8), 1, accuracy: 0.0001)
-        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 1.8), 1.8, accuracy: 0.0001)
-        XCTAssertEqual(XDRGamma.factor(boost: 0.5, headroom: 1.8), 1.4, accuracy: 0.0001)
+        XCTAssertEqual(XDRBrightness.factor(boost: 0, headroom: 1.8), 1, accuracy: 0.0001)
+        XCTAssertEqual(XDRBrightness.factor(boost: 1, headroom: 1.8), 1.8, accuracy: 0.0001)
+        XCTAssertEqual(XDRBrightness.factor(boost: 0.5, headroom: 1.8), 1.4, accuracy: 0.0001)
     }
 
     func testFactorIsCappedWhateverTheReportedHeadroom() {
         // An XDR panel reports 16× potential headroom (reference-mode HDR).
-        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 16), XDRGamma.maxFactor, accuracy: 0.0001)
+        XCTAssertEqual(XDRBrightness.factor(boost: 1, headroom: 16), XDRBrightness.maxFactor, accuracy: 0.0001)
     }
 
     func testNoHeadroomMeansNoBoost() {
-        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 1), 1, accuracy: 0.0001)
-        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 0), 1, accuracy: 0.0001)
-    }
-
-    func testTableIsAScaledRamp() {
-        let t = XDRGamma.table(factor: 1.5)
-        XCTAssertEqual(t.count, XDRGamma.tableSize)
-        XCTAssertEqual(t.first!, 0, accuracy: 0.0001)
-        XCTAssertEqual(t.last!, 1.5, accuracy: 0.0001)
-        XCTAssertTrue(XDRGamma.carriesBoost(t))
-        XCTAssertFalse(XDRGamma.isPlainRamp(t))
-    }
-
-    func testScalingKeepsThePanelsOwnCurveAndLiftsIt() {
-        // A calibrated (non-linear) table keeps its shape; only the scale changes.
-        let base: [CGGammaValue] = (0..<XDRGamma.tableSize).map { powf(Float($0) / 255, 2.2) }
-        let scaled = XDRGamma.scaled(base, by: 1.5)
-        XCTAssertEqual(scaled.count, base.count)
-        XCTAssertEqual(scaled.last!, 1.5, accuracy: 0.0001)
-        XCTAssertEqual(scaled[128], base[128] * 1.5, accuracy: 0.0001)
-        XCTAssertTrue(XDRGamma.carriesBoost(scaled))
-        XCTAssertFalse(XDRGamma.carriesBoost(XDRGamma.scaled(base, by: 1)))
+        XCTAssertEqual(XDRBrightness.factor(boost: 1, headroom: 1), 1, accuracy: 0.0001)
+        XCTAssertEqual(XDRBrightness.factor(boost: 1, headroom: 0), 1, accuracy: 0.0001)
     }
 
     func testHDRIsEngagedOnlyOncePanelReportsHeadroom() {
         // Before the overlay takes effect the panel reports 1.0; a rounding wobble is not HDR.
-        XCTAssertFalse(XDRGamma.isHDREngaged(currentHeadroom: 1))
-        XCTAssertFalse(XDRGamma.isHDREngaged(currentHeadroom: 1.02))
-        XCTAssertTrue(XDRGamma.isHDREngaged(currentHeadroom: 1.6))
-    }
-
-    func testIdentityTableIsAPlainRampWithNoBoost() {
-        let t = XDRGamma.table(factor: 1)
-        XCTAssertFalse(XDRGamma.carriesBoost(t))
-        XCTAssertTrue(XDRGamma.isPlainRamp(t))
-    }
-
-    func testScrambledTableFailsTheRampCheck() {
-        var t = XDRGamma.table(factor: 1)
-        t[100] = 0.9; t[101] = 0.1
-        XCTAssertFalse(XDRGamma.isPlainRamp(t))
-        XCTAssertFalse(XDRGamma.isPlainRamp([]))
+        XCTAssertFalse(XDRBrightness.isHDREngaged(currentHeadroom: 1))
+        XCTAssertFalse(XDRBrightness.isHDREngaged(currentHeadroom: 1.02))
+        XCTAssertTrue(XDRBrightness.isHDREngaged(currentHeadroom: 1.6))
     }
 
     func testBoostOnlyWhileAwakeSettledAndAllowedOnPower() {
@@ -82,26 +49,46 @@ final class XDRBrightnessTests: XCTestCase {
 
     // The panel's headroom ramps from 1.0 to its maximum over ~2 s after HDR
     // engages (measured 1.0 → 5.0 in 2.25 s), and moves with brightness; the
-    // table is rewritten whenever the factor it should carry changes.
+    // overlay is redrawn whenever the factor it should carry changes.
     func testRewriteWhenTheFactorMoves() {
-        XCTAssertTrue(XDRGamma.shouldRewrite(written: nil, wanted: 1.2))
-        XCTAssertTrue(XDRGamma.shouldRewrite(written: 1.26, wanted: 2))
-        XCTAssertFalse(XDRGamma.shouldRewrite(written: 2, wanted: 2.002))
+        XCTAssertTrue(XDRBrightness.shouldRewrite(written: nil, wanted: 1.2))
+        XCTAssertTrue(XDRBrightness.shouldRewrite(written: 1.26, wanted: 2))
+        XCTAssertFalse(XDRBrightness.shouldRewrite(written: 2, wanted: 2.002))
     }
 
     func testFactorOnceTheHeadroomHasRamped() {
-        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 1.26), 1.26, accuracy: 1e-6, "early in the ramp")
-        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 5), 2, accuracy: 1e-6, "ramped: capped at maxFactor")
-        XCTAssertEqual(XDRGamma.factor(boost: 0.5, headroom: 5), 1.5, accuracy: 1e-6)
+        XCTAssertEqual(XDRBrightness.factor(boost: 1, headroom: 1.26), 1.26, accuracy: 1e-6, "early in the ramp")
+        XCTAssertEqual(XDRBrightness.factor(boost: 1, headroom: 5), 2, accuracy: 1e-6, "ramped: capped at maxFactor")
+        XCTAssertEqual(XDRBrightness.factor(boost: 0.5, headroom: 5), 1.5, accuracy: 1e-6)
     }
 
-    // MARK: Availability (issue #30)
+    // MARK: What the overlay draws
 
-    func testXDRCannotBeSwitchedOnWhileUnavailable() {
-        // As shipped until the multiply overlay lands: the table boost does
-        // nothing on M5 Pro panels under macOS 27.
-        XCTAssertFalse(XDRPolicy.available)
-        XCTAssertFalse(XDRPolicy.canEnable(onBattery: false, offOnBattery: false))
+    func testNoBoostHidesTheOverlay() {
+        XCTAssertEqual(XDRBrightness.overlayFactor(boost: 0, headroom: 2.67), 1)
+        XCTAssertEqual(XDRBrightness.overlayFactor(boost: 0, headroom: 1), 1)
+    }
+
+    func testBoostBeforeHeadroomStillAsksForIt() {
+        // The panel grants headroom only while an EDR layer is up; the factor
+        // is 1 until it does, so the overlay draws the invisible request value.
+        XCTAssertEqual(XDRBrightness.overlayFactor(boost: 1, headroom: 1), XDRBrightness.requestFactor)
+        XCTAssertGreaterThan(XDRBrightness.requestFactor, 1)
+        XCTAssertLessThan(XDRBrightness.requestFactor, XDRBrightness.hdrReadyThreshold)
+    }
+
+    func testBoostOnceGrantedIsTheFactor() {
+        XCTAssertEqual(XDRBrightness.overlayFactor(boost: 1, headroom: 2.67), 2, accuracy: 1e-6)
+        XCTAssertEqual(XDRBrightness.overlayFactor(boost: 0.5, headroom: 1.6), 1.3, accuracy: 1e-6)
+    }
+
+    // MARK: Availability (issue #28)
+
+    func testXDRIsAvailableWithTheMultiplyOverlay() {
+        // The multiply-composited EDR overlay replaces the transfer table that
+        // M5 Pro panels ignore under macOS 27 (FB22273730).
+        XCTAssertTrue(XDRPolicy.available)
+        XCTAssertTrue(XDRPolicy.canEnable(onBattery: false, offOnBattery: true))
         XCTAssertFalse(XDRPolicy.canEnable(available: false, onBattery: false, offOnBattery: true))
     }
 
@@ -109,5 +96,29 @@ final class XDRBrightnessTests: XCTestCase {
         XCTAssertTrue(XDRPolicy.canEnable(available: true, onBattery: false, offOnBattery: true))
         XCTAssertTrue(XDRPolicy.canEnable(available: true, onBattery: true, offOnBattery: false))
         XCTAssertFalse(XDRPolicy.canEnable(available: true, onBattery: true, offOnBattery: true))
+    }
+
+    // MARK: Preset hint
+
+    private let hint = "Set Displays ▸ Preset to Apple XDR Display (P3-1600 nits)"
+
+    func testPresetHintOnSDRPreset() {
+        // "Apple Display (P3-600 nits)": potential headroom 5, nothing granted yet.
+        XCTAssertEqual(XDRPolicy.presetHint(potentialHeadroom: 5, grantedHeadroom: nil), hint)
+    }
+
+    func testNoHintOnXDRPreset() {
+        // "Apple XDR Display (P3-1600 nits)": potential 16, live 2.67 once engaged.
+        XCTAssertNil(XDRPolicy.presetHint(potentialHeadroom: 16, grantedHeadroom: 2.67))
+        XCTAssertNil(XDRPolicy.presetHint(potentialHeadroom: 16, grantedHeadroom: nil), "not asked yet")
+    }
+
+    func testOnlyAnXDRPresetCanHaveHeadroom() {
+        XCTAssertFalse(XDRPolicy.canHaveHeadroom(potentialHeadroom: 5))
+        XCTAssertTrue(XDRPolicy.canHaveHeadroom(potentialHeadroom: 16))
+    }
+
+    func testHintWhenNothingGranted() {
+        XCTAssertEqual(XDRPolicy.presetHint(potentialHeadroom: 16, grantedHeadroom: 1.0), hint)
     }
 }

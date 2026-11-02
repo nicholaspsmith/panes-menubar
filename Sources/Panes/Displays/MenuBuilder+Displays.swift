@@ -113,18 +113,25 @@ extension DisplaysFeature {
         menu.addItem(row)
     }
 
-    /// XDR brightness: only on a built-in panel with EDR headroom.
+    /// XDR brightness: only on a built-in panel with EDR headroom. On a preset
+    /// that can't give headroom (or once the panel granted none), a disabled
+    /// line under the toggle says which preset to pick.
     private func addXDRRows(_ entry: DisplayModel.Entry, to menu: NSMenu) {
-        guard xdr.isSupported(entry.info.id) else { return }
+        let id = entry.info.id
+        guard xdr.isSupported(id) else { return }
         let toggle: NSMenuItem
         if !XDRPolicy.available {
             toggle = NSMenuItem(title: "XDR Brightness · unavailable", action: nil, keyEquivalent: "")
             toggle.isEnabled = false
-            toggle.toolTip = "Not working on macOS 27 yet: the panel ignores the brightness table XDR used. It comes back with a new method (Monitor Lizard issue #30)."
+            toggle.toolTip = "XDR Brightness is switched off in this build."
             menu.addItem(toggle)
             return
         } else if xdr.isBlockedByBattery {
             toggle = NSMenuItem(title: "XDR Brightness · off on battery", action: nil, keyEquivalent: "")
+            toggle.isEnabled = false
+        } else if !xdr.canHaveHeadroom(id) && !xdr.isEnabled {
+            // No headroom to be had on this preset; the hint below says why.
+            toggle = NSMenuItem(title: "XDR Brightness", action: nil, keyEquivalent: "")
             toggle.isEnabled = false
         } else {
             // Keeps the menu open; the Brightness slider above re-maps at once.
@@ -135,6 +142,12 @@ extension DisplaysFeature {
         toggle.toolTip = "Extends the Brightness slider (and the brightness-up key) past full, into the panel's HDR headroom. Off again at every launch."
         ToggleMenuItem.view(of: toggle)?.toolTip = toggle.toolTip
         menu.addItem(toggle)
+        if let hint = xdr.presetHint(id) {
+            let row = NSMenuItem(title: hint, action: nil, keyEquivalent: "")
+            row.isEnabled = false
+            row.toolTip = "XDR Brightness needs headroom above SDR white, which only the XDR preset gives (System Settings ▸ Displays ▸ Preset)."
+            menu.addItem(row)
+        }
     }
 
     /// XDR on or off from the menu, with the open Brightness slider (its

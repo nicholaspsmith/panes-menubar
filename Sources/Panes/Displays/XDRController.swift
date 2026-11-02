@@ -6,34 +6,38 @@
 
 import AppKit
 import IOKit.ps
-import MetalKit
 import DisplayCore
 
-/// XDR brightness for the built-in panel, the way BrightIntosh does it: a
-/// one-pixel EDR window drawing above SDR white makes the window server put
-/// the panel into HDR mode, and once the panel reports the headroom a transfer
-/// table lifts SDR white into it.
+/// XDR brightness for the built-in panel: a full-screen, multiply-composited
+/// EDR overlay (`EDRMultiplyOverlay`) per built-in panel. The EDR layer makes
+/// the window server put the panel into HDR mode, and its uniform value
+/// multiplies everything beneath it into the headroom the panel grants.
 ///
-/// A gamma table is exactly what BetterDisplay's wake colour-scramble bug
-/// left behind, so the lifecycle is the feature:
+/// The overlay replaces the transfer table this used to write (Monitor
+/// Lizard's BrightIntosh-style boost): on macOS 27 an M5 Pro/Max panel ignores
+/// `CGSetDisplayTransferByTable` — it reports success and reads back, but
+/// nothing changes on screen (Apple FB22273730, issue #28). The full-screen
+/// layer also engages HDR by itself, so the old 1-px trigger window is gone.
+///
+/// A colour boost is exactly what BetterDisplay's wake colour-scramble bug
+/// left behind, so the lifecycle is the feature; "cleared" means the overlay
+/// is closed:
 /// - off at every launch; the on state is never persisted
-/// - the table is cleared before sleep, before display sleep, on quit, and at
-///   the start of every display reconfiguration (lid close, the panel leaving
-///   the display list); it comes back only once reconfiguration has been
-///   quiet for `settleDelay`
+/// - the overlay is closed before sleep, before display sleep, on quit, and
+///   at the start of every display reconfiguration (lid close, the panel
+///   leaving the display list); it comes back only once reconfiguration has
+///   been quiet for `settleDelay`
 /// - unplugging switches it off (optional, on by default)
 /// - built-in displays only; external displays are never touched
-/// - after every clear the table is read back and checked for leftover boost
+/// - Dim and XDR are exclusive: the one Brightness slider (`BuiltInSlider`)
+///   and the keys (`BrightnessKeys.route`) never give a dim and a boost at once
 ///
-/// CoreGraphics also restores every transfer table when the process exits,
-/// so a crash cannot strand the boost either.
+/// On quit, `applicationWillTerminate` → `DisplaysFeature.stop()` → `stop()`
+/// closes the overlay. A crash can't leave it behind: unlike a transfer table
+/// it is a window, and it dies with the process.
 final class XDRController {
     static let offOnBatteryKey = "xdrOffOnBattery"
     private static let settleDelay: TimeInterval = 2
-    /// How long to wait for the panel to switch into HDR mode after the
-    /// overlay appears, and how often to look.
-    private static let hdrPollInterval: TimeInterval = 0.5
-    private static let hdrPollAttempts = 20
 
     private(set) var isEnabled = false {
         // The boost is the top of the Brightness slider, which only exists
@@ -67,18 +71,22 @@ final class XDRController {
     private var screensAsleep = false
     private var settling = false
     private var settleWork: DispatchWorkItem?
-    private var overlays: [CGDirectDisplayID: NSWindow] = [:]
-    /// Each panel's own table, captured before the first boost and scaled
-    /// from then on, so a calibration curve is lifted rather than replaced.
-    private var baseTables: [CGDirectDisplayID: [CGGammaValue]] = [:]
+    private var overlays: [CGDirectDisplayID: EDRMultiplyOverlay] = [:]
+    /// When each panel's overlay first asked for headroom, until it was
+    /// granted or `hdrWait` ran out.
+    private var asking: [CGDirectDisplayID: Date] = [:]
+    /// Panels whose boost is on screen (headroom granted), for the logs.
     private var boosted: Set<CGDirectDisplayID> = []
-    private var hdrWaits: [CGDirectDisplayID: DispatchWorkItem] = [:]
-    /// The factor each boosted panel's table carries now.
-    private var writtenFactors: [CGDirectDisplayID: Float] = [:]
-    /// While boosted: follows the panel's headroom, which ramps up for ~2 s
-    /// after HDR engages (1.0 → 5.0 measured) and moves with brightness.
-    /// Without it the boost locked at whatever headroom the first write saw
-    /// (~1.26), and the Boost slider only spanned 1.0…1.26.
+    /// The headroom each panel granted the last time the overlay asked: nil
+    /// until it has asked; ≤ `hdrReadyThreshold` when nothing came. Feeds the
+    /// menu's preset hint.
+    private var granted: [CGDirectDisplayID: Float] = [:]
+    /// How long the panel may take to switch into HDR mode once the overlay
+    /// asks (measured: under 0.25 s on the XDR preset).
+    private static let hdrWait: TimeInterval = 2
+    /// While the overlay is up: follows the panel's headroom, which ramps up
+    /// for ~1.5 s after HDR engages (1.0 → 6.3 measured) and moves with
+    /// brightness, so the factor never sits above what is granted.
     private var headroomTimer: Timer?
     private static let headroomInterval: TimeInterval = 0.25
     private var powerSource: CFRunLoopSource?
@@ -119,7 +127,7 @@ final class XDRController {
         }
     }
 
-    /// On quit: the table goes before the app does.
+    /// On quit: the overlay goes before the app does.
     func stop() {
         isEnabled = false
         update()
@@ -127,6 +135,8 @@ final class XDRController {
 
     func setEnabled(_ on: Bool) {
         isEnabled = on && XDRPolicy.canEnable(onBattery: onBattery, offOnBattery: offOnBattery)
+        // A fresh try: the preset may have changed since the last one.
+        if isEnabled { granted = [:] }
         Log.xdr.info("XDR brightness \(self.isEnabled ? "on" : "off")")
         update()
     }
@@ -137,11 +147,25 @@ final class XDRController {
         return screen.maximumPotentialExtendedDynamicRangeColorComponentValue > 1
     }
 
+    /// Whether the panel's preset can give headroom at all (not an SDR preset).
+    func canHaveHeadroom(_ id: CGDirectDisplayID) -> Bool {
+        guard let screen = Self.screen(for: id) else { return false }
+        return XDRPolicy.canHaveHeadroom(potentialHeadroom: Float(screen.maximumPotentialExtendedDynamicRangeColorComponentValue))
+    }
+
+    /// The menu's "switch the preset" line, or nil while the panel can (or
+    /// did) give headroom.
+    func presetHint(_ id: CGDirectDisplayID) -> String? {
+        guard let screen = Self.screen(for: id) else { return nil }
+        return XDRPolicy.presetHint(potentialHeadroom: Float(screen.maximumPotentialExtendedDynamicRangeColorComponentValue),
+                                    grantedHeadroom: granted[id])
+    }
+
     // MARK: - Lifecycle
 
     private func reconfigured(beginning: Bool) {
         if beginning {
-            // Clear before the display list changes under the table.
+            // Close before the display list changes under the overlay.
             settleWork?.cancel()
             settling = true
             update()
@@ -186,88 +210,59 @@ final class XDRController {
         }
     }
 
-    // MARK: - Overlay and table
+    // MARK: - Overlay
 
     private func apply() {
         let panels = Self.builtInDisplays()
         // A panel that has left the list takes its overlay with it.
-        for (id, window) in overlays where !panels.contains(id) {
-            window.orderOut(nil)
-            overlays[id] = nil
-            baseTables[id] = nil
-            boosted.remove(id)
-            writtenFactors[id] = nil
-            hdrWaits[id]?.cancel()
-            hdrWaits[id] = nil
-        }
+        for id in overlays.keys where !panels.contains(id) { closeOverlay(id) }
         for id in panels {
             guard let screen = Self.screen(for: id) else { continue }
             guard screen.maximumPotentialExtendedDynamicRangeColorComponentValue > 1 else { continue }
-            guard let window = overlays[id] ?? Self.makeOverlay() else {
-                // Without the overlay there is no HDR mode to boost into; a
-                // table alone would only clip highlights.
-                Log.xdr.error("display \(id): couldn't create the EDR overlay")
-                continue
-            }
-            overlays[id] = window
-            // One pixel in the panel's top-left corner, like BrightIntosh.
-            window.setFrameOrigin(NSPoint(x: screen.frame.minX, y: screen.frame.maxY - 1))
-            window.orderFrontRegardless()
-            writeTableWhenHDREngaged(id, attempt: 0)
+            let overlay = overlays[id] ?? EDRMultiplyOverlay(screen: screen)
+            overlays[id] = overlay
+            follow(id, overlay, screen: screen)
         }
+        if boost > 0 { startTrackingHeadroom() } else { stopTrackingHeadroom() }
     }
 
-    /// The table is only worth writing once the panel has actually switched
-    /// into HDR mode, which the window server does a moment after the overlay
-    /// appears; the screen's current headroom says when.
-    private func writeTableWhenHDREngaged(_ id: CGDirectDisplayID, attempt: Int) {
-        hdrWaits[id]?.cancel()
-        hdrWaits[id] = nil
-        guard let screen = Self.screen(for: id) else { return }
+    /// Sets the overlay's factor from the boost and the headroom the panel
+    /// grants now. With no headroom yet it draws the request value, which
+    /// asks for HDR mode without visibly changing anything.
+    private func follow(_ id: CGDirectDisplayID, _ overlay: EDRMultiplyOverlay, screen: NSScreen) {
         let headroom = Float(screen.maximumExtendedDynamicRangeColorComponentValue)
-        if XDRGamma.isHDREngaged(currentHeadroom: headroom) {
-            writeTable(id, headroom: headroom)
+        let potential = Float(screen.maximumPotentialExtendedDynamicRangeColorComponentValue)
+        let factor = XDRBrightness.overlayFactor(boost: boost, headroom: headroom)
+        let changed = overlay.factor != factor
+        if changed { overlay.factor = factor }
+        guard boost > 0 else {
+            // Hidden: the next boost asks afresh.
+            asking[id] = nil
+            if boosted.remove(id) != nil { Log.xdr.info("display \(id): boost 0, overlay hidden") }
             return
         }
-        guard attempt < Self.hdrPollAttempts else {
-            Log.xdr.error("display \(id): panel never entered HDR mode (headroom \(headroom)); not boosting")
-            return
-        }
-        let work = DispatchWorkItem { [weak self] in self?.writeTableWhenHDREngaged(id, attempt: attempt + 1) }
-        hdrWaits[id] = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.hdrPollInterval, execute: work)
-    }
-
-    private func writeTable(_ id: CGDirectDisplayID, headroom: Float) {
-        if baseTables[id] == nil {
-            guard let base = Self.readTable(id) else {
-                Log.xdr.error("display \(id): couldn't read the current transfer table; not boosting")
-                return
+        if XDRBrightness.isHDREngaged(currentHeadroom: headroom) {
+            granted[id] = headroom
+            if let since = asking.removeValue(forKey: id) {
+                Log.xdr.info("display \(id): HDR engaged in \(Date().timeIntervalSince(since), format: .fixed(precision: 2)) s, headroom \(headroom) of potential \(potential)")
             }
-            if XDRGamma.carriesBoost(base) {
-                // Someone else's boost is on the panel; stacking ours on it
-                // would be exactly the kind of leftover this feature avoids.
-                Log.xdr.error("display \(id): transfer table already carries a boost; not boosting")
-                return
-            }
-            baseTables[id] = base
-        }
-        guard let base = baseTables[id] else { return }
-        let factor = XDRGamma.factor(boost: boost, headroom: headroom)
-        guard XDRGamma.shouldRewrite(written: writtenFactors[id], wanted: factor) else { return }
-        var table = XDRGamma.scaled(base, by: factor)
-        let rc = CGSetDisplayTransferByTable(id, UInt32(table.count), &table, &table, &table)
-        if rc == .success {
-            if !boosted.contains(id) {
+            if boosted.insert(id).inserted {
                 Log.xdr.info("display \(id): boost on, factor \(factor) of headroom \(headroom)")
-            } else {
+            } else if changed {
                 Log.xdr.debug("display \(id): factor \(factor) of headroom \(headroom)")
             }
-            boosted.insert(id)
-            writtenFactors[id] = factor
-            startTrackingHeadroom()
-        } else {
-            Log.xdr.error("display \(id): transfer table write failed rc=\(rc.rawValue)")
+            return
+        }
+        boosted.remove(id)
+        guard let since = asking[id] else {
+            asking[id] = Date()
+            return
+        }
+        // Once per try: a failure already recorded stays recorded.
+        let alreadyFailed = granted[id].map { !XDRBrightness.isHDREngaged(currentHeadroom: $0) } ?? false
+        if Date().timeIntervalSince(since) > Self.hdrWait, !alreadyFailed {
+            granted[id] = headroom
+            Log.xdr.error("display \(id): panel never entered HDR mode (headroom \(headroom), potential \(potential)); on an SDR preset? Not boosting")
         }
     }
 
@@ -278,76 +273,29 @@ final class XDRController {
         headroomTimer = t
     }
 
+    private func stopTrackingHeadroom() {
+        headroomTimer?.invalidate()
+        headroomTimer = nil
+    }
+
     private func trackHeadroom() {
-        for id in boosted {
+        for (id, overlay) in overlays {
             guard let screen = Self.screen(for: id) else { continue }
-            let headroom = Float(screen.maximumExtendedDynamicRangeColorComponentValue)
-            // Out of HDR mode (it can lapse): leave it to the next apply.
-            guard XDRGamma.isHDREngaged(currentHeadroom: headroom) else { continue }
-            writeTable(id, headroom: headroom)
+            follow(id, overlay, screen: screen)
         }
+    }
+
+    private func closeOverlay(_ id: CGDirectDisplayID) {
+        overlays.removeValue(forKey: id)?.close()
+        asking[id] = nil
+        boosted.remove(id)
     }
 
     private func clear() {
-        headroomTimer?.invalidate()
-        headroomTimer = nil
-        writtenFactors = [:]
-        for work in hdrWaits.values { work.cancel() }
-        hdrWaits = [:]
-        let ids = boosted
-        boosted = []
-        baseTables = [:]
-        if !ids.isEmpty {
-            // Table first, overlay second: the other way round would briefly
-            // show a >1 table with no HDR mode behind it.
-            CGDisplayRestoreColorSyncSettings()
-            verifyCleared(ids)
-            Log.xdr.info("boost off")
-        }
-        for window in overlays.values { window.orderOut(nil) }
-        overlays = [:]
-    }
-
-    /// The colour guard's ramp check: whatever is on the panel now must carry
-    /// no boost. A display that has already left the list can't be read, and
-    /// needs no check.
-    private func verifyCleared(_ ids: Set<CGDirectDisplayID>) {
-        for id in ids {
-            guard let table = Self.readTable(id) else { continue }
-            if XDRGamma.carriesBoost(table) {
-                Log.xdr.fault("display \(id): boost still present after clear; restoring again")
-                CGDisplayRestoreColorSyncSettings()
-            } else if !XDRGamma.isPlainRamp(table) {
-                Log.xdr.error("display \(id): transfer table is not a plain ramp after clear")
-            }
-        }
-    }
-
-    /// The display's red channel table; the built-in panel's channels match.
-    private static func readTable(_ id: CGDirectDisplayID) -> [CGGammaValue]? {
-        var red = [CGGammaValue](repeating: 0, count: XDRGamma.tableSize)
-        var green = red, blue = red
-        var count: UInt32 = 0
-        guard CGGetDisplayTransferByTable(id, UInt32(XDRGamma.tableSize), &red, &green, &blue, &count) == .success,
-              count > 0 else { return nil }
-        return Array(red.prefix(Int(count)))
-    }
-
-    private static func makeOverlay() -> NSWindow? {
-        guard let view = EDROverlayView(device: MTLCreateSystemDefaultDevice()) else { return nil }
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1, height: 1), styleMask: [], backing: .buffered, defer: false)
-        window.isReleasedWhenClosed = false
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = false
-        window.ignoresMouseEvents = true
-        window.canHide = false
-        window.hidesOnDeactivate = false
-        window.animationBehavior = .none
-        window.level = .screenSaver
-        window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
-        window.contentView = view
-        return window
+        stopTrackingHeadroom()
+        let wasBoosted = !boosted.isEmpty
+        for id in Array(overlays.keys) { closeOverlay(id) }
+        if wasBoosted { Log.xdr.info("boost off: overlay closed") }
     }
 
     // MARK: - System queries
@@ -369,45 +317,5 @@ final class XDRController {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
               let type = IOPSGetProvidingPowerSourceType(info)?.takeUnretainedValue() else { return false }
         return (type as String) == kIOPSBatteryPowerValue
-    }
-}
-
-/// A one-pixel Metal layer that asks for EDR content and draws a value above
-/// SDR white, which is what makes the window server switch the panel into
-/// HDR mode. Redrawn a few times a second, as BrightIntosh does, so the
-/// request never lapses; the transfer table does the actual brightening.
-final class EDROverlayView: MTKView, MTKViewDelegate {
-    private let queue: MTLCommandQueue
-
-    init?(device: MTLDevice?) {
-        guard let device, let queue = device.makeCommandQueue() else { return nil }
-        self.queue = queue
-        super.init(frame: NSRect(x: 0, y: 0, width: 1, height: 1), device: device)
-        autoResizeDrawable = false
-        drawableSize = CGSize(width: 1, height: 1)
-        colorPixelFormat = .rgba16Float
-        colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
-        let v = XDRGamma.overlayValue
-        clearColor = MTLClearColorMake(v, v, v, 1)
-        preferredFramesPerSecond = 5
-        delegate = self
-        if let layer = layer as? CAMetalLayer {
-            layer.wantsExtendedDynamicRangeContent = true
-            layer.isOpaque = false
-            layer.pixelFormat = .rgba16Float
-        }
-    }
-
-    required init(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
-
-    func draw(in view: MTKView) {
-        guard let pass = currentRenderPassDescriptor, let drawable = currentDrawable,
-              let buffer = queue.makeCommandBuffer(),
-              let encoder = buffer.makeRenderCommandEncoder(descriptor: pass) else { return }
-        encoder.endEncoding()
-        buffer.present(drawable)
-        buffer.commit()
     }
 }
