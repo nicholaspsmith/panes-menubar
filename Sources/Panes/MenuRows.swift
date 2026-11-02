@@ -303,7 +303,7 @@ enum KeepOpen {
 /// one the section starts folded every time.
 enum MenuSection {
     @discardableResult
-    static func add(title: String, tag: String? = nil, key: String? = nil, defaultExpanded: Bool = true,
+    static func add(title: String, tag: String? = nil, key: String? = nil, defaultExpanded: Bool = false,
                     items: [NSMenuItem], to menu: NSMenu) -> DisclosureRow {
         KeepOpen.apply(to: items)
         let defaultsKey = key.map { "menuSection.\($0).expanded" }
@@ -323,6 +323,12 @@ enum MenuSection {
             }
         }
         header.view = row
+        // AppKit lays the menu out around whether any item has a state: with
+        // none (every section folded) it drops the checkmark column and the
+        // native titles move left of this row's. The heading says `.on` to
+        // keep the column, as StatusItemKit's ToggleMenuItem does; AppKit
+        // draws nothing for a view item's state.
+        header.state = .on
         menu.addItem(header)
         if expanded { for item in items { menu.addItem(item) } }
         return row

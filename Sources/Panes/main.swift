@@ -415,7 +415,7 @@ final class App: NSObject, NSApplicationDelegate {
         // The actions fold under one Shortcuts row, folded each time the
         // menu opens.
         shortcutItems = makeShortcutItems()
-        MenuSection.add(title: "Shortcuts", defaultExpanded: false, items: shortcutItems, to: menu)
+        MenuSection.add(title: "Shortcuts", items: shortcutItems, to: menu)
 
         if !trusted {
             menu.addItem(.separator())
