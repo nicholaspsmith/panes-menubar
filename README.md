@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.3.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.4.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
 
@@ -58,8 +58,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 | `⌥⌘C` | center at half the screen's width (at least 1000 pt), full height; press again for two thirds of the height, centred both ways (see below) |
 | `⌥⌘⌫` | restore: undo the last move Panes made to this window (again for the one before) |
 | `⌥⌘N` | move to the next display, keeping the window's relative frame |
-| `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two, when you let go of `⌥⌘` (see below) |
-| hold `⌥⌘` | a 4×4 grid over the screen: click or drag across cells (see below) |
+| hold `⌥⌘` | a 4×4 grid over the screen, numbered 1–10 in hex: click or drag across cells (see below) |
 | hold `⌥⌘⇧` | the hold-`⌥⌘` grid in half-cells, 8×8, numbered 1–40 in hex (the menu's grid is always 8×8) |
 
 Each acts on the focused window of the frontmost app. A shortcut is
@@ -88,47 +87,22 @@ the left half, `⌥⌘↑` the top half. Pressing toward the side the window is 
 on widens it back to that half: `⌥⌘→` on the top-right quarter is the right
 half, `⌥⌘↑` on it the top half.
 
-### Cell keys
-
-The grid's 16 cells have keys, row by row from the top-left (no `C`, which
-stays Center):
-
-```
-1 2 3 4
-5 6 7 8
-9 A B D
-E F G H
-```
-
-Hold `⌥⌘`, press a cell's key and let go: the front window fills that cell.
-Press two keys before letting go and it fills the rectangle spanning both, in
-either order (`1` then `8` is the top half, `1` then `H` maximizes); with more
-than two, the first and last count. A translucent preview shows the target
-while `⌥⌘` is held. A chord only starts on a cell key, so `⌥⌘` with an arrow,
-`[` `]` `;` `'`, `M`, `C`, `N` or `⌫` still acts at once (and drops any chord
-in progress), as does any shortcut you rebind onto a cell key. Cell keys are
-taken only while a window is in front to arrange.
-
-**Panes takes over `⌥⌘D`** (macOS: hide or show the Dock) **and `⌥⌘H`**
-(Hide Others) whenever a window is in front. Preferences can move cell keys to
-`⌃⌥`, `⌃⌥⌘` or `⇧⌘` (the last takes over the screenshot shortcuts `⇧⌘3`,
-`⇧⌘4` and `⇧⌘5`).
-
 ### Grid on hold ⌥⌘
 
 Hold `⌥⌘` on its own (no other key, no mouse button) for a moment (0.35 s by
 default) and a dark grid fades in over the front window's display. It covers
 exactly the display's visible frame, below the menu bar and beside the Dock,
 so each cell sits over the very area a window filling it would take. A 4×4
-grid labelled with the [cell keys](#cell-keys), shaded like the menu's: click
+grid, its cells numbered 1 to 10 in hex (`1`–`F`, then `10`) row by row from
+the top-left, shaded like the menu's: click
 a cell, or drag across cells, and the front window fills it. The app you
 were in keeps focus throughout.
 
 - Let go of `⌥` or `⌘` and it fades out (a drag in progress is dropped).
-- Press any key while it is up, a cell key or a shortcut included, and it
+- Press any key while it is up, a shortcut included, and it
   goes at once; the key does what it always does. Panes never takes `Esc`,
   so `⌥⌘Esc` is still Force Quit.
-- A quick `⌥⌘` shortcut or a cell-key chord never brings it up: any key
+- A quick `⌥⌘` shortcut never brings it up: any key
   during the hold cancels it until `⌥⌘` is let go.
 - Hold `⌥⌘⇧` (from the start, or add `⇧` while it is up) for half-cells;
   drop `⇧` for 4×4 again.
@@ -143,14 +117,13 @@ The menu's grid is always half-cells: each 4×4 cell split into its own 2×2,
 an 8×8 grid, and holding keys while the menu is open does not change it. On
 the hold-⌥⌘ grid, hold `⌥⌘⇧` for the same half-cells. Click one, or drag
 across several, to fill that area exactly as with the 4×4 grid; shading
-follows the finer cells. On the hold-⌥⌘ grid each half-cell shows its number, smaller than the cell
-keys: 1 to 40 in hex, row by row from the top-left (`1`–`8` across the top,
-`9`–`10` the next row, down to `40` bottom-right). They are only a guide:
-half-cells have no keys to type. Let go of `⇧` to return to 4×4 and its cell
-keys. `⌥⌘⇧` on its own is never taken from apps
+follows the finer cells. On the hold-⌥⌘ grid each half-cell shows its number, smaller than on the
+4×4 grid: 1 to 40 in hex, row by row from the top-left (`1`–`8` across the
+top, `9`–`10` the next row, down to `40` bottom-right). The numbers are only a
+guide; no key types them. Let go of `⇧` to return to 4×4. `⌥⌘⇧` on its own is never taken from apps
 and never starts a chord.
 
-<p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset; the cell-key modifier; and how long to hold ⌥⌘ for the grid"></p>
+<p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset; and how long to hold ⌥⌘ for the grid"></p>
 
 ### The menu
 
@@ -161,8 +134,7 @@ and never starts a chord.
   [Night Shift](#night-shift)).
 - **The layout grid**: the display the front window is on, cut into 8×8
   [half-cells](#half-cells), as wide as the separator lines above and below
-  it and roughly as tall as the display's shape (unlabelled: the
-  [cell keys](#cell-keys) name the 4×4 cells).
+  it and roughly as tall as the display's shape (unlabelled).
   Click a cell and the window fills it; drag across cells and the selection
   highlights as you go, and the window fills it on release (a 4×8 drag from
   the top-left is the left half).
@@ -435,12 +407,11 @@ still.
   without fn. While Preferences records a shortcut, the tap lets keys through
   to the recorder. The tap is re-created every 6 s to stay ahead of taps other
   apps add later.
-- **Cell keys** need a second tap of Panes's own (`ChordTap`): a chord ends
-  when the modifiers are *released*, and HotkeyKit's tap never sees
-  `flagsChanged`. The same tap feeds the hold-⌥⌘ grid (`HoldGrid` in
-  PanesCore decides when it shows and goes; the grid view is shared with the
-  menu). It swallows only cell-key presses (and their key-ups) made
-  with exactly the chord modifiers; `ChordLogic` in PanesCore decides.
+- **The hold-⌥⌘ grid** needs a second tap of Panes's own (`ModifierTap`):
+  it shows on modifiers held alone, and HotkeyKit's tap never sees
+  `flagsChanged`. It only watches and never takes a key. `HoldGrid` in
+  PanesCore decides when the grid shows and goes; the grid view is shared
+  with the menu.
 - **Accessibility** (`AXUIElement`) reads and sets the focused window's
   position and size (messaging timeout 0.3 s, so a hung app cannot stall the
   tap). Only standard windows and dialogs whose position is settable, not
@@ -457,7 +428,7 @@ still.
   without changing size, which tells a title-bar drag from a resize or a drag
   inside the content.
 - **PanesCore** holds the testable logic: frames for every action on any
-  display layout, the center column and box, cell-key chords, the relative move between displays, the fit-after-refusal
+  display layout, the center column and box, the grid's hex numbers, the relative move between displays, the fit-after-refusal
   nudge, snap zones, restore history, the grid, the frame interpolation and
   pacing, the icon's window mapping and pixel alignment, bindings and their
   formatting. **PanesGlyph** draws the Screen Grid and Major Pane, shared by

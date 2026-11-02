@@ -8,6 +8,16 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.4.0] - 2026-11-02
+
+### Removed
+
+- Cell keys: holding ⌥⌘ and typing a cell's key no longer moves the window, and the Cell Keys setting is gone from Preferences. Panes no longer takes ⌥⌘D (Dock hiding) or ⌥⌘H (Hide Others) from macOS.
+
+### Changed
+
+- The grid on hold ⌥⌘ numbers its 16 cells straight through in hex, 1 to F then 10, with no letter skipped.
+
 ## [1.3.0] - 2026-11-02
 
 ### Added

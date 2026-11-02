@@ -12,8 +12,8 @@ import HotkeyKit
 /// and it is the 8×8 half-cell grid. Adding or dropping ⇧ switches between
 /// them, before or after it appears. Letting go of ⌥ or ⌘, pressing any
 /// key, or adding another modifier takes it away. After a key or a stray modifier it stays
-/// away until ⌥⌘ is let go, so a ⌥⌘ shortcut or a cell-key chord held a
-/// little long never flashes it.
+/// away until ⌥⌘ is let go, so a ⌥⌘ shortcut held a little long never
+/// flashes it.
 ///
 /// Pure: the app feeds it modifier changes, key presses and timer ticks with
 /// their times, and carries out the effect each returns.
@@ -84,7 +84,7 @@ public struct HoldGrid: Equatable, Sendable {
         }
     }
 
-    /// Any key went down (a shortcut, a cell key…). The key is never taken
+    /// Any key went down (a shortcut, a letter…). The key is never taken
     /// for this — it is handled as usual (⌥⌘Esc stays Force Quit); the grid
     /// just gets out of its way for the rest of this hold.
     public mutating func keyDown() -> Effect {
