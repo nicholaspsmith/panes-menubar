@@ -96,14 +96,12 @@ public struct LayoutGrid: Equatable, Sendable {
     }
 }
 
-/// Where a grid drawn at a fixed size sits in the room a view gives it (the
-/// menu's grid, in a menu wider than the grid): centred, on whole points,
-/// and never larger than the room.
+/// Where a grid sits in the view that draws it: the view's bounds inset by
+/// fixed amounts on each side, stretched to fill whatever width the view is
+/// given (the menu widens its item views to its own width; the cells stretch
+/// with it, aspect ratio or not). Never negative.
 public enum GridPlacement {
-    public static func centred(_ size: CGSize, in room: CGRect) -> CGRect {
-        let w = max(0, min(size.width, room.width)), h = max(0, min(size.height, room.height))
-        return CGRect(x: (room.minX + (room.width - w) / 2).rounded(.down),
-                      y: (room.minY + (room.height - h) / 2).rounded(.down),
-                      width: w, height: h)
+    public static func rect(in size: CGSize, left: CGFloat, top: CGFloat, right: CGFloat, bottom: CGFloat) -> CGRect {
+        CGRect(x: left, y: top, width: max(0, size.width - left - right), height: max(0, size.height - top - bottom))
     }
 }

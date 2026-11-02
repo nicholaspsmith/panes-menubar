@@ -129,27 +129,28 @@ final class GridTests: XCTestCase {
         XCTAssertEqual(grid.cells(coveredBy: w, in: v), [], "under half of any 4×4 cell")
     }
 
-    // MARK: Placement (the menu's grid, centred in a menu wider than it)
+    // MARK: Placement (the grid stretched between fixed side insets)
 
-    func testPlacementCentresAFixedSizeInWiderRoom() {
-        let room = CGRect(x: 16, y: 6, width: 300, height: 135)
-        XCTAssertEqual(GridPlacement.centred(CGSize(width: 216, height: 135), in: room),
-                       CGRect(x: 58, y: 6, width: 216, height: 135))
+    func testPlacementInsetsFromEachSide() {
+        // The menu's grid in a 274 pt menu: 32 pt from the left, 18 from the right, 6 top and bottom.
+        XCTAssertEqual(GridPlacement.rect(in: CGSize(width: 274, height: 147), left: 32, top: 6, right: 18, bottom: 6),
+                       CGRect(x: 32, y: 6, width: 224, height: 135))
     }
 
-    func testPlacementFillsRoomOfExactlyItsSize() {
-        let room = CGRect(x: 16, y: 6, width: 216, height: 135)
-        XCTAssertEqual(GridPlacement.centred(room.size, in: room), room)
+    func testPlacementStretchesWithTheWidth() {
+        // A wider menu widens the grid by the same amount; the left edge and the height stay put.
+        XCTAssertEqual(GridPlacement.rect(in: CGSize(width: 320, height: 147), left: 32, top: 6, right: 18, bottom: 6),
+                       CGRect(x: 32, y: 6, width: 270, height: 135))
     }
 
-    func testPlacementSitsOnWholePoints() {
-        // 301 − 216 = 85 spare: 42 to the left, 43 to the right.
-        let r = GridPlacement.centred(CGSize(width: 216, height: 135), in: CGRect(x: 16, y: 6, width: 301, height: 135))
-        XCTAssertEqual(r, CGRect(x: 58, y: 6, width: 216, height: 135))
+    func testPlacementWithNoInsetsIsTheWholeView() {
+        // The overlay: the grid is the view.
+        XCTAssertEqual(GridPlacement.rect(in: CGSize(width: 1512, height: 949), left: 0, top: 0, right: 0, bottom: 0),
+                       CGRect(x: 0, y: 0, width: 1512, height: 949))
     }
 
-    func testPlacementNeverOutgrowsTheRoom() {
-        let room = CGRect(x: 16, y: 6, width: 200, height: 100)
-        XCTAssertEqual(GridPlacement.centred(CGSize(width: 216, height: 135), in: room), room)
+    func testPlacementNeverGoesNegative() {
+        XCTAssertEqual(GridPlacement.rect(in: CGSize(width: 40, height: 10), left: 32, top: 6, right: 18, bottom: 6),
+                       CGRect(x: 32, y: 6, width: 0, height: 0))
     }
 }

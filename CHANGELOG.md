@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.1.1] - 2026-11-01
+
+### Fixed
+
+- The menu's grid now lines up with the separators above and below it, filling the menu's width.
+
 ## [1.1.0] - 2026-11-01
 
 - The minute cue no longer waits for Monitor Lizard, so the apps after it each move up a second
