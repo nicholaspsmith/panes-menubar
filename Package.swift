@@ -9,10 +9,11 @@ import PackageDescription
 
 let package = Package(
     name: "Panes",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     products: [
         .executable(name: "Panes", targets: ["Panes"]),
         .library(name: "PanesCore", targets: ["PanesCore"]),
+        .library(name: "DisplayCore", targets: ["DisplayCore"]),
         // The Major Pane review page: `swift run major-pane-render preview OUT.html [--frames FILE]`.
         .executable(name: "major-pane-render", targets: ["MajorPaneRender"]),
     ],
@@ -35,10 +36,14 @@ let package = Package(
             dependencies: [
                 "PanesCore",
                 "PanesGlyph",
+                "DisplayCore",
                 .product(name: "StatusItemKit", package: "StatusItemKit"),
                 .product(name: "HotkeyKit", package: "HotkeyKit"),
             ]
         ),
+        // Monitor Lizard's pure core (DDC, XDR, dim, Night Shift); no dependencies.
+        .target(name: "DisplayCore"),
+        .testTarget(name: "DisplayCoreTests", dependencies: ["DisplayCore"]),
         .testTarget(name: "PanesCoreTests", dependencies: ["PanesCore"]),
         .testTarget(name: "PanesGlyphTests", dependencies: ["PanesGlyph"]),
     ]

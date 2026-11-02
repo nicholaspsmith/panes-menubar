@@ -1,14 +1,26 @@
 # Panes
 
-<p align="center"><img src="docs/mascot.png" width="160" alt="Panes's app icon: Major Pane at attention behind his pane, a quarter of it lit"></p>
+<p align="center"><img src="docs/mascot.png" width="160" alt="Panes's app icon: Armonitor, a spotted yellow monitor lizard, wrapped round the top and right side of a bright blue monitor on the dark tile"></p>
 
-<p align="center"><img src="docs/menubar-icon.png" width="480" alt="Major Pane in the menu bar: at attention with his pane unlit, a quarter lit, a half lit and all of it lit, at ease and greyed without Accessibility, then the screen-grid icon"></p>
+<p align="center"><img src="docs/menubar-icon.png" width="480" alt="The Screen Grid icon in the menu bar: an empty display, two windows side by side as halves, three windows tiled in quarters, two free windows overlapping, then greyed without Accessibility"></p>
 
-A standalone macOS menu-bar app that arranges windows: **global shortcuts**
-for halves, quarters, maximize, center, restore and next display; a **4×4
-layout grid** in the menu, and over the whole screen while you hold `⌥⌘`; and
-**edge snapping** when you drag a window to a display edge. A replacement for
-Rectangle.
+A standalone macOS menu-bar app for your windows and your displays.
+
+- **Windows**: **global shortcuts** for halves, quarters, maximize, center,
+  restore and next display; a **4×4 layout grid** in the menu, and over the
+  whole screen while you hold `⌥⌘`; and **edge snapping** when you drag a
+  window to a display edge. A replacement for Rectangle.
+- **Displays**: an external monitor's brightness, contrast and resolution,
+  the keyboard's brightness keys on that monitor, the MacBook's own screen
+  from dimmer than macOS allows (Dim) to brighter than it allows (XDR), and
+  Night Shift with a sunset-to-sunrise schedule.
+
+**Panes replaces Monitor Lizard.** From 1.0.0 it does everything Monitor
+Lizard did; whenever it starts it quits Monitor Lizard if it's running and
+turns off its Start at Login, and the first time it also brings its settings
+over (see
+[Coming from Monitor Lizard](#coming-from-monitor-lizard)). Its mascot is
+Monitor Lizard's too: **Armonitor**, the monitor lizard on the app icon.
 
 Its shortcuts are taken by a `CGEventTap` before any app sees them, so an
 app that claims the same keys (iTerm2 and ⌥⌘M, say) cannot get in the way,
@@ -19,14 +31,23 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 0.13.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.0.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The window half of the Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
+
+(The screenshot predates 1.0.0: the menu now opens with a section per
+display and Night Shift above the grid, and has an Icon submenu below
+Settings. See [The menu](#the-menu).)
 
 ## Requirements
 
-- macOS 13+ (tested on Apple Silicon, macOS 27)
-- Accessibility permission (to move windows and intercept keys)
+- macOS 14 or later on Apple Silicon (tested on macOS 27)
+- **Accessibility** permission, to move windows and to take the shortcuts and
+  the brightness keys
+- **Location** (optional), only for a Night Shift schedule that follows
+  sunset and sunrise; without it the main city of your time zone is used
+- **Notifications** (optional), only asked the first time Panes needs to tell
+  you a TV-mode fix needs the display reconnected
 - Sibling checkouts of `StatusItemKit` and `HotkeyKit` next to this repo (to build)
 
 ## What it does
@@ -38,7 +59,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 | `⌥⌘[` / `⌥⌘]` | top-left / top-right quarter |
 | `⌥⌘;` / `⌥⌘'` | bottom-left / bottom-right quarter |
 | `⌥⌘M` | maximize (the visible frame: below the menu bar, beside the Dock) |
-| `⌥⌘C` | center at half the screen's width, full height; press again for two thirds of the height, centred both ways (see below) |
+| `⌥⌘C` | center at half the screen's width (at least 1000 pt), full height; press again for two thirds of the height, centred both ways (see below) |
 | `⌥⌘⌫` | restore: undo the last move Panes made to this window (again for the one before) |
 | `⌥⌘N` | move to the next display, keeping the window's relative frame |
 | `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two, when you let go of `⌥⌘` (see below) |
@@ -54,7 +75,9 @@ recording; a shortcut shared by two actions is flagged in red).
 ### Center: column, then box
 
 `⌥⌘C` makes the window half the screen's width, centred left to right and
-the full height of the screen: a column. Press it again and the window is
+the full height of the screen: a column. On a small display the column is
+never narrower than 1000 pt (or the whole width, if the display is narrower
+than that), so the window still has room to work in. Press it again and the window is
 centred both ways at two thirds of the height: a box. Further presses
 alternate column, box, column. A window that isn't in the column (moved by
 hand, or by another Panes action) gets the column first.
@@ -134,6 +157,9 @@ finer cells. Let go of `⇧` to return to 4×4 (cell-key labels show only there)
 
 (Pictured at the top of this page.)
 
+- **One section per display** (see [Displays and brightness](#displays-and-brightness)),
+  then **Night Shift** with its Warmth slider and **Schedule…** (see
+  [Night Shift](#night-shift)).
 - **The layout grid**: the display the front window is on, cut into 4×4
   cells at its visible frame's aspect ratio, each labelled with its
   [cell key](#cell-keys) (hold `⌥⌘⇧` for [half-cells](#half-cells)). Click a cell and the window fills
@@ -153,9 +179,12 @@ finer cells. Let go of `⇧` to return to 4×4 (cell-key labels show only there)
 - **Settings ▸** (StatusItemKit's `SettingsMenu`)
   - **Edge Snapping**: on by default.
   - **Grid on Hold ⌥⌘**: on by default; see [below](#grid-on-hold-).
+  - **Brightness Keys**: on by default; see [below](#brightness-keys).
   - **Preferences…** (⌘,): rebind the shortcuts.
   - **Start at Login**, then the version.
-- **Icon ▸**: Major Pane or Screen Grid.
+- **Icon ▸**: Screen Grid (the default), Major Pane, Armonitor, or one of
+  the Arc, Gauge, Pie and Wedge meters, with the meters' colours. See
+  [The icon](#the-icon).
 - **Quit Panes** (⌘Q).
 
 ### Edge snapping
@@ -170,12 +199,13 @@ across to the next display never snaps on the way.
 ### Animation
 
 Every move (shortcut, grid, snap, restore) glides there, eased in and out
-over 0.26 s (about as long as macOS's own tiling), stepping at 120 Hz. The
-first step only reaches the screen 40-100 ms in, so a glide that started fast
-would jump; this one starts gently and stays smooth. It is
-time-driven, so an app slow to apply Accessibility sets gets fewer, larger
-steps rather than a late stutter, and one too slow for four steps jumps
-straight there. Reduce Motion jumps every time. Each move ends with an exact
+over 0.26 s (about as long as macOS's own tiling), stepping once per refresh
+of the display the window lands on: 120 times a second on a ProMotion panel,
+60 on most external monitors. It is time-driven, so an app slow to apply
+Accessibility sets gets fewer, larger steps rather than a late stutter, and
+one too slow for four steps jumps straight there. A glide always finishes,
+even if its display sleeps or is unplugged mid-move. Reduce Motion jumps
+every time. Each move ends with an exact
 size, position, size, then a re-read: a window that refuses the size (a
 minimum width, a terminal snapping to cells) is nudged back against the edges
 its target hugged, so a too-wide right half stays flush right.
@@ -189,46 +219,209 @@ Return to Previous Size, waits the 0.4 s macOS takes to animate that, and
 then glides. A move out of the tile glides straight away: macOS forgets the
 tile by itself once the window leaves it.
 
-## Major Pane
+## Displays and brightness
 
-Panes's mascot is **Major Pane**, a commander of windows: blond flat-top,
-square jaw, dark shades, chest out, holding his pane in front of him like a
-riot shield, a fist round each edge; the pane is the size of the old
-screen-grid glyph and ruled into a faint 4×4 grid. He is pixel art,
-hand-placed on a 29×22 grid with eighteen colours, drawn in whole pixels at
-the bar's backing scale so
-nothing is ever blurred. The pane is a 4×4 window grid, and its cells light to
-show where the frontmost app's window sits: eight for a half, four for a
-quarter, all sixteen when it is maximized, none when it floats free, when there
-is no window, or when that window is on another display.
+The menu opens with one section per display, then Night Shift for the whole
+Mac:
 
-He stands at attention (a slow breath, a glint on the shades) and, in Panes's
-turn in the Menumon minute cue, snaps a salute. When Panes moves a window he
-barks the order and the pane relights to its new tile. Without Accessibility
-he stands at ease, pane lowered, greyed out. Under Reduce Motion he holds
-still. **Icon ▸** swaps him for the screen-grid glyph below.
+| Row | What it does |
+|-----|--------------|
+| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors: the ones the keyboard brightness keys already work on). |
+| **Contrast** | Same, for contrast. |
+| **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
+| **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. |
+| **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See [XDR brightness](#xdr-brightness). |
+| **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See [Night Shift on a monitor macOS thinks is a TV](#night-shift-on-a-monitor-macos-thinks-is-a-tv). |
 
-**The screen grid**, the alternate icon, is a little display in the Menumon
-glyph style (shaded bezel on a stand, dark glass, ink outlines), shaped like
-the display the icon sits on, with a faint 4×4 grid. Every window on that display is drawn on it as a small tile at its
-true scaled position and size, whether or not it fits the grid, back to front
-with outlines so overlaps read; the frontmost window is amber, the others
-soft blues, greens and lilacs. It greys out, like
-Major Pane, while Accessibility is not granted.
+Sliders apply live as you drag. Displays are never polled, and Panes stores
+no display settings (only the Night Shift schedule): the monitor keeps its
+own brightness and macOS keeps the rest. Dim and XDR brightness are off
+every time Panes starts.
+
+Quit BetterDisplay, MonitorControl or any other DDC tool: two apps talking
+to one monitor at once interfere with each other.
+
+### Brightness keys
+
+macOS only lets the brightness keys dim the built-in panel. With
+**Settings ▸ Brightness Keys** on (the default), Panes catches the plain
+brightness keys:
+
+- **Main display is an external monitor it can drive**: it steps that
+  monitor's brightness in sixteen steps across the range, by the same route as
+  its Brightness row (DDC, or DisplayServices for a monitor that refuses DDC
+  but that macOS can dim), and swallows the key. With Armonitor as the icon,
+  he flicks his tongue as the change lands.
+- **Main display is the built-in panel, or a monitor nothing can drive**: the
+  key passes through to macOS, except that at the built-in panel's lowest lit
+  step brightness-down enters [Dim](#dim) instead of switching the screen off.
+  After the deepest dim step the next press switches it off; brightness-up
+  walks back the same way. With XDR Brightness on, brightness-up past full
+  steps into the boost in four +25% steps.
+
+Holding a key repeats. `Ctrl` + brightness is never touched, so
+[KeyLight](https://github.com/nicholaspsmith/keylight-menubar) keeps it for the
+keyboard backlight. Panes listens for the media-key event an Apple keyboard
+sends, which is also what KeyLight posts for F1/F2 on a third-party keyboard,
+so both kinds of keyboard work without the apps knowing about each other. The
+keys use the same Accessibility grant as the window shortcuts.
+
+### Dim
+
+On the built-in panel every brightness from macOS's lowest key step (1/16)
+down to just above zero gives the same 1-nit backlight, and zero switches it
+off. **Dim** (the bottom fifth of the built-in Brightness slider) goes darker
+by laying a click-through black overlay over the panel. The keys walk it in
+five steps letting through 81, 66, 53, 43 and 35% of the light; the slider
+covers the same range smoothly, with a readout such as "Dim 53%". The key
+ladder is macOS's steps down to 1/16, then the five dim steps, then off; up
+from off returns to the deepest dim step.
+
+The overlay covers everything, menus and the menu bar included. It takes no
+clicks, follows you into every Space and full-screen app, and is left out of
+screenshots and recordings; the pointer stays at full brightness. It goes when
+Panes quits and is off every time Panes starts. Raising the brightness
+another way (Control Center, auto-brightness) cancels it. Dim and XDR never
+apply at once.
+
+### XDR brightness
+
+On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
+display) extends the built-in Brightness slider: its top fifth pushes the
+whole screen past the normal ceiling, up to twice SDR white, using the
+panel's HDR headroom. The readout says "XDR +50%" and so on. It works on M5
+Macs, where Monitor Lizard's version could not (macOS 27 ignores the
+brightness table it wrote on an M5 Pro/Max panel, Apple FB22273730).
+
+Panes lays a full-screen, click-through EDR layer over the panel, as
+BrightIntosh does: the layer puts the panel into HDR mode, and the window
+server multiplies everything beneath it into the headroom the panel grants.
+The headroom ramps up over about two seconds and moves with brightness, and
+the boost follows it. Like Dim's overlay it joins every Space and is left
+out of screenshots.
+
+The headroom only exists on an XDR preset. On "Apple Display (P3-600 nits)"
+and the other SDR presets the toggle is greyed, and a line under it says
+**Set Displays ▸ Preset to Apple XDR Display (P3-1600 nits)** (System
+Settings ▸ Displays ▸ Preset).
+
+The overlay is closed before sleep, when the displays sleep, on quit and
+whenever the display setup changes (lid closed, monitor plugged in), and
+comes back only once things settle. Being a window, it goes with the app, so
+even a crash cannot leave a boost behind. It is never applied to external
+displays and is off every time Panes starts.
+
+On battery, XDR Brightness switches off and the menu shows "XDR Brightness ·
+off on battery" until you plug in. To allow it on battery:
+`defaults write com.nicholaspsmith.Panes xdrOffOnBattery -bool false`.
+
+Side effects: HDR video can clip its brightest highlights while it is on, and
+the panel draws more power and runs warmer.
+
+## Night Shift
+
+The menu's **Night Shift** row toggles it, **Warmth** sets how warm it is,
+and **Schedule…** opens a small window:
+
+- **Turn on**: at sunset, or at a set time. Sunset can be moved up to three
+  hours either way ("30 min before sunset").
+- **Turn off**: at sunrise, or at a set time, with the same offsets.
+- Each sun-based row shows the next sunset or sunrise and the time Night
+  Shift will actually switch, offset included.
+- **Ramp the warmth**: Night Shift starts with no warmth and climbs to the
+  Warmth slider's setting over the first 15 min to 3 h, then fades over the
+  same span before it turns off. While the ramp runs, the Warmth slider sets
+  the warmth it climbs to.
+
+The line under Schedule… says when Night Shift next turns on or off.
+Switching Night Shift by hand (from the menu or Control Center) holds until
+the schedule's next on or off time. Turning the schedule on turns off macOS's
+own Night Shift schedule, so the two never fight. Set times need no location.
+
+Sunset and sunrise come from the Mac's location. Panes saves the place it
+finds and asks Location Services again only when it has no saved place, the
+saved one is more than 30 days old, your time zone changes, or you open
+Schedule…. If Location is denied, the saved place keeps working; with no
+saved place, the main city of your time zone is used.
+
+### Night Shift on a monitor macOS thinks is a TV
+
+macOS turns Night Shift off on any display it thinks is a **television**, and
+it thinks that about plenty of ordinary monitors plugged in over HDMI. Panes
+spots that, asks for your password **once**, and writes a small override
+telling macOS the display is a monitor. Unplug and replug the display (or
+reboot) and Night Shift works on it from then on. Panes does not need to be
+running for the fix to hold.
+
+## The icon
+
+**Icon ▸**, right below Settings, picks what sits in the menu bar:
+
+- **Screen Grid** (the default): the windows on your display, as tiles.
+- **Major Pane**: the commander of windows, his pane lit where the front
+  window sits.
+- **Armonitor**: the monitor lizard on his monitor, showing the main
+  display's brightness and Night Shift.
+- **Arc, Gauge, Pie, Wedge**: plain meters of the main display's brightness,
+  in the colour picked below them in the same menu.
+
+**The Screen Grid** is a little display in the Menumon glyph style (shaded
+bezel on a stand, dark glass, ink outlines), shaped like the display the icon
+sits on, with a faint 4×4 grid. Every window on that display is drawn on it as
+a small tile at its true scaled position and size, whether or not it fits the
+grid, back to front with outlines so overlaps read; the frontmost window is
+amber, the others soft blues, greens and lilacs. It greys out while
+Accessibility is not granted. In Panes's turn in the Menumon minute cue
+(StatusItemKit's `MinuteCue`), twice a minute, the windows on the display
+bunch up in the middle and slide out into their tiles, the front one glowing
+as it lands. Not under Reduce Motion, and not on an empty display.
 
 The window list comes from `CGWindowListCopyWindowInfo` (bounds only, which
 needs neither Accessibility nor Screen Recording). The icon redraws when an
 app activates, the Space or the displays change, after Panes moves a window,
 and on a 1.5 s poll that redraws only when the bounds list has changed.
 
-<p align="center"><img src="docs/animation.png" alt="Major Pane barking an order, the pane lighting the half and then the quarter where the window landed"></p>
+Whichever icon is chosen does Panes's turn in the minute cue: the grid's
+tiles slide, Major Pane salutes, Armonitor runs a lap of his monitor. None of
+them moves under Reduce Motion.
 
-When the grid is the chosen icon it takes Panes's turn in the Menumon minute
-cue (StatusItemKit's `MinuteCue`) instead of the salute: twice a minute the
-windows on the display bunch up in the middle and slide out into their tiles,
-the front one glowing as it lands. Not under Reduce Motion, and not on an
-empty display. The app icon is Major Pane drawn large on the dark tile every
-Menumon app shares.
+## Armonitor
+
+Panes's mascot is **Armonitor**, the monitor lizard Monitor Lizard brought
+with it: a spotted yellow lizard wrapped round a little monitor. He is the app
+icon (drawn large on the dark tile every Menumon app shares) and one of the
+menu-bar icons. As the icon, the screen fills with blue as the main display
+gets brighter and turns amber while Night Shift is on, and he flicks his
+tongue when a slider or key change lands on the monitor.
+
+In Panes's turn in the minute cue he runs a lap of his monitor (3 s). He also
+runs a lap of the whole screen (about 3.4 s) when Panes starts, when a display
+it has not seen before is connected, and when Night Shift turns on or off
+(from the menu, Control Center or its schedule); sliders never trigger it.
+The lap plays in a click-through overlay, so nothing under it stops working.
+Both laps happen only while Armonitor is the chosen icon, and never under
+Reduce Motion.
+
+## Major Pane
+
+**Major Pane**, Panes's mascot before 1.0.0 and now one of its icons, is a
+commander of windows: blond flat-top, square jaw, dark shades, chest out,
+holding his pane in front of him like a riot shield, a fist round each edge;
+the pane is the size of the Screen Grid icon and ruled into a faint 4×4 grid.
+He is pixel art, hand-placed on a 29×22 grid with eighteen colours, drawn in
+whole pixels at the bar's backing scale so nothing is ever blurred. The
+pane's cells light to show where the frontmost app's window sits: eight for a
+half, four for a quarter, all sixteen when it is maximized, none when it
+floats free, when there is no window, or when that window is on another
+display.
+
+He stands at attention (a slow breath, a glint on the shades) and, in Panes's
+turn in the Menumon minute cue, snaps a salute. When Panes moves a window he
+barks the order and the pane relights to its new tile. Without Accessibility
+he stands at ease, pane lowered, greyed out. Under Reduce Motion he holds
+still.
+
+<p align="center"><img src="docs/animation.png" alt="Major Pane barking an order, the pane lighting the half and then the quarter where the window landed"></p>
 
 ## How it works
 
@@ -263,8 +456,41 @@ Menumon app shares.
   display layout, the center column and box, cell-key chords, the relative move between displays, the fit-after-refusal
   nudge, snap zones, restore history, the grid, the frame interpolation and
   pacing, the icon's window mapping and pixel alignment, bindings and their
-  formatting. **PanesGlyph** draws the icon, shared by the app and
-  `panes-render-icons`.
+  formatting. **PanesGlyph** draws the Screen Grid and Major Pane, shared by
+  the app and the Menumon site's renderer. Armonitor and the meters are
+  StatusItemKit's (`CharacterIcon.monitorLizard`, `MeterIcon`).
+- **Glides** step on a display link of the screen the window lands on, at its
+  refresh rate (`NSScreen.maximumFramesPerSecond`). A timer a quarter second
+  past the glide's length finishes it if that link stops (the display slept
+  or went away), so the window always lands and Enhanced UI is always put back.
+- **Brightness and contrast** go over DDC/CI through `IOAVService`, the
+  private IOKit interface every Apple Silicon DDC tool uses. One serial queue
+  per display, every read confirmed by checksum.
+- **Built-in screen brightness** uses DisplayServices, as does any external
+  display macOS says it can dim itself (`DisplayServicesCanChangeBrightness`)
+  once a DDC read has failed on it. That is the route the keyboard keys take.
+- **Brightness keys** come through HotkeyKit's `CGEventTap`, bound to the two
+  brightness media keys with no modifiers. They step the main display over
+  whichever route its Brightness row uses, DDC or DisplayServices. On the
+  built-in panel they pass through to macOS down to 1/16, then drive Dim.
+- **Dim** is a borderless black `NSWindow` per built-in panel at
+  `.screenSaver` level, click-through, `sharingType = .none`, joining every
+  Space. Its opacity is `1 − 0.35^level`. (Gamma tables scaled below 1 change
+  nothing visible on this panel, in SDR or HDR, so Dim cannot use one.)
+- **XDR brightness** is a borderless, click-through window per built-in panel
+  whose `CAMetalLayer` asks for EDR and draws one uniform value with a
+  multiply compositing filter (`EDRMultiplyOverlay`). No transfer or gamma
+  table is written, so nothing outlives the process.
+- **Night Shift** uses CoreBrightness. The schedule's place comes from Core
+  Location (When In Use), saved with the date it was found.
+- **The "is this a TV?" flag** comes from CoreDisplay, the same source
+  `system_profiler` reads. **The TV fix** is a plist at
+  `/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-<hex>/DisplayProductID-<hex>`
+  containing `DisplayIsTV = false`; macOS reads it when the display attaches.
+- **DisplayCore** holds the displays' testable logic (Monitor Lizard's core):
+  DDC and its retries, display matching and modes, the built-in slider's
+  Dim/macOS/XDR ladder, the XDR policy, Night Shift's schedule and sun times,
+  the Location policy, the lap trigger and the Monitor Lizard migration.
 
 ## Install
 
@@ -273,7 +499,9 @@ Menumon app shares.
 ```
 
 Builds `Panes.app`, symlinks it into `~/Applications`, and launches it. Grant
-**Accessibility** when prompted.
+**Accessibility** when prompted. On a Mac that parity
+keeps in sync, it hands the install to parity instead (`PARITY=off
+./install.sh` builds locally).
 
 ### Make the Accessibility grant survive rebuilds (recommended)
 
@@ -303,6 +531,22 @@ Toggle it from **Settings ▸ Start at Login** in the menu, or from the shell:
 "$HOME/Applications/Panes.app/Contents/MacOS/Panes" --login on       # or: off, status
 ```
 
+### Coming from Monitor Lizard
+
+Nothing to do by hand. Every time Panes starts it checks for Monitor Lizard;
+if it is running, Panes asks it to quit (forcing it after a few seconds) and,
+if it is installed, turns off its Start at Login, so there is only ever one
+icon and one app driving the displays. Monitor Lizard clears its own Dim and
+XDR as it quits.
+
+Once, after that, Panes copies Monitor Lizard's settings into its own:
+Brightness Keys, XDR's off-on-battery choice, the Night Shift schedule, its
+warmth and saved place, and the meter colour. A setting Panes already has is
+never overwritten. A meter icon (Arc, Gauge, Pie or Wedge) carries over as
+Panes's icon if you had not picked one; Armonitor does not, so the Screen
+Grid stays the default (pick Armonitor in **Icon ▸** to keep him in the bar).
+Monitor Lizard's own settings are left where they are.
+
 ### Coming from Rectangle
 
 Quit Rectangle (and remove it from Login Items) before relying on Panes: both
@@ -315,7 +559,7 @@ menu warns while it is on).
 
 ```sh
 swift build                    # compile
-swift test                     # PanesCore unit tests
+swift test                     # PanesCore, DisplayCore and PanesGlyph unit tests (no display needed)
 scripts/make-icon.sh           # Resources/bundle/AppIcon.icns and docs/mascot.png
 python3 art/major-pane/build_frames.py && python3 art/major-pane/render.py   # the art → frames.json, review renders in art/major-pane/out/
 scripts/gen_major_pane_frames.py art/major-pane/frames.json                 # → Sources/PanesGlyph/MajorPaneFrames.swift (a test fails if stale)
@@ -327,12 +571,20 @@ Major Pane is drawn in `art/major-pane/build_frames.py`, every pixel in code;
 generator compiles it into Swift. The concept sketches in `art/mascot/` are
 guide only.
 
+```sh
+log show --last 5m --predicate 'subsystem == "com.nicholaspsmith.Panes"' --style compact
+```
+
+The displays log under the categories `ddc`, `modes`, `nightshift`, `tvrole`,
+`menu`, `xdr` and `migration`.
+
 Every Menumon app's pictures are rendered from its own drawing code by the
 [Menumon site](https://github.com/nicholaspsmith/widgets.nicksmith.software)'s
 `art/glyphs`, which compiles `PanesGlyph` with the PanesCore types it needs.
 `scripts/make-icon.sh` runs its `app-icons.sh` for Panes alone (needs that repo
-and StatusItemKit checked out beside this one); its `render-glyphs.sh` draws
-`docs/menubar-icon.png` along with every other app's strip.
+and StatusItemKit checked out beside this one), drawing Armonitor on the tile;
+its `render-glyphs.sh` draws `docs/menubar-icon.png` (the Screen Grid's
+states) and `docs/animation.png` along with every other app's pictures.
 
 ## Releasing
 
@@ -356,6 +608,10 @@ the hook on a fresh clone. See
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one)
 for the whole rule.
 
+## Why not a SwiftBar plugin?
+
+This is a standalone `.app` built on [StatusItemKit](https://github.com/nicholaspsmith/StatusItemKit), not a script under a plugin host: no SwiftBar to install, a real AppKit menu (a live layout grid, sliders that apply as you drag) instead of rendered stdout, event-driven updates instead of a re-run timer, global key taps and overlays a script cannot hold, and an icon that keeps its place in the bar.
+
 ## The menu-bar suite
 
 A suite of macOS menu-bar apps that share one framework, one build-and-sign
@@ -370,11 +626,10 @@ common **Icon** picker, and cooperative hiding so no icon strands another.
 | [VPN & DNS](https://github.com/nicholaspsmith/vpn-dns-menubar) | An iguana for Mullvad + Tailscale state, with a DNS watcher |
 | [Mac Daddy](https://github.com/nicholaspsmith/mac-daddy-menubar) | Kills media trackers, trashes stale downloads, reaps hung processes, watches the UA mixer engine, and sweats as your process count climbs |
 | [KeyLight](https://github.com/nicholaspsmith/keylight-menubar) | Ctrl+brightness keys remapped to keyboard backlight |
-| [Monitor Lizard](https://github.com/nicholaspsmith/monitor-lizard-menubar) | External-monitor brightness, contrast and resolution, Night Shift, and the built-in screen from dimmer than macOS allows to XDR |
 | [Homestead](https://github.com/nicholaspsmith/home-assistant-menubar) | Home Assistant dashboards and device controls in the menu |
 | [SoundChain](https://github.com/nicholaspsmith/soundchain-menubar) | One chain of Audio Unit effects over all system audio |
 | [Menu Crane](https://github.com/nicholaspsmith/menu-crane) | A ⌘Space launcher for apps, arithmetic, unit conversions and emoji |
-| **Panes** | Window shortcuts, a layout grid and edge snapping |
+| **Panes** | Window shortcuts, a layout grid and edge snapping; external-monitor brightness, contrast and resolution, the brightness keys, Night Shift, and the built-in screen from dimmer than macOS allows to XDR (replaces Monitor Lizard) |
 | [MacRecorder](https://github.com/nicholaspsmith/MacRecorder) | Screen recording with system audio |
 | [Barn](https://github.com/nicholaspsmith/menubar-barn) | macOS 26 and earlier only: hides a block of status icons by width (on macOS 27, use System Settings ▸ Menu Bar) |
 
@@ -399,6 +654,10 @@ redistribute this software, including inside proprietary products, provided
 the copyright notice and license stay on these files and any modified
 versions of them are made available under the same license.
 
-The Major Pane artwork (`art/`, the generated frames, the icon and the
-pictures in `docs/`) is [CC BY-NC 4.0](art/LICENSE): see [NOTICE](NOTICE). It
-may not be used commercially.
+The Major Pane artwork (everything under `art/`, the generated
+`Sources/PanesGlyph/MajorPaneFrames.swift`, and `docs/animation.png`, the one
+picture in `docs/` that shows him) is [CC BY-NC 4.0](art/LICENSE): see
+[NOTICE](NOTICE). It may not be used commercially. The app icon
+(`Resources/bundle/AppIcon.icns`), `docs/mascot.png` and
+`docs/menubar-icon.png` show Armonitor and the Screen Grid, drawn by
+MPL-licensed code, and fall under the Mozilla Public License 2.0 with the rest.

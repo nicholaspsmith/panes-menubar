@@ -63,18 +63,19 @@ public struct FrameAnimation: Equatable, Sendable {
 /// long that only a step or two would fit jumps straight to the end, as it
 /// does under Reduce Motion.
 public enum AnimationPacing {
-    /// 120 Hz, the ProMotion refresh rate.
-    public static let frameInterval: TimeInterval = 1.0 / 120
     /// Fewer than this many steps reads as a stutter, not a glide.
     public static let minimumSteps = 4
 
     /// The interval between steps, or nil to jump straight to the target.
     /// - Parameter setCost: seconds one position+size set took in this app
     ///   the last time Panes measured it (nil if never).
+    /// - Parameter refreshRate: the target display's refresh rate in Hz; the
+    ///   base interval is one frame of it.
     public static func stepInterval(duration: TimeInterval = FrameAnimation.defaultDuration,
-                                    setCost: TimeInterval?, reduceMotion: Bool) -> TimeInterval? {
+                                    setCost: TimeInterval?, reduceMotion: Bool,
+                                    refreshRate: Double = 120) -> TimeInterval? {
         if reduceMotion || duration <= 0 { return nil }
-        let interval = max(frameInterval, setCost ?? 0)
+        let interval = max(1 / max(refreshRate, 1), setCost ?? 0)
         return duration / interval >= Double(minimumSteps) ? interval : nil
     }
 }

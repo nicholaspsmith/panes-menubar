@@ -5,9 +5,11 @@
 #
 # Copyright (c) 2026 Nicholas Smith
 
-# Rebuild Resources/bundle/AppIcon.icns and docs/mascot.png: Major Pane, drawn
-# large on the dark macOS tile every Menumon app shares, through the site's
-# app-icons.sh (widgets.nicksmith.software/art/glyphs, which compiles PanesGlyph).
+# Rebuild Resources/bundle/AppIcon.icns and docs/mascot.png: Armonitor
+# (StatusItemKit's CharacterIcon.monitorLizard), drawn large on the dark macOS
+# tile every Menumon app shares, through the site's app-icons.sh
+# (widgets.nicksmith.software/art/glyphs). docs/menubar-icon.png comes from
+# that folder's render-glyphs.sh, which draws every app's strip.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 renderer=../widgets.nicksmith.software/art/glyphs/app-icons.sh

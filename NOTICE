@@ -1,7 +1,12 @@
 Panes is Mozilla Public License 2.0 (LICENSE).
 
 The Major Pane artwork — everything under art/, the generated
-Sources/PanesGlyph/MajorPaneFrames.swift, Resources/bundle/AppIcon.icns and the
-pictures under docs/ — is Copyright (c) 2026 Nicholas Smith and licensed under
-Creative Commons Attribution-NonCommercial 4.0 International (art/LICENSE).
-It may not be used commercially. Major Pane is an original character.
+Sources/PanesGlyph/MajorPaneFrames.swift, and docs/animation.png (the one
+picture under docs/ that shows Major Pane) — is Copyright (c) 2026 Nicholas
+Smith and licensed under Creative Commons Attribution-NonCommercial 4.0
+International (art/LICENSE). It may not be used commercially. Major Pane is
+an original character.
+
+Everything else, including Resources/bundle/AppIcon.icns, docs/mascot.png and
+docs/menubar-icon.png (Armonitor and the Screen Grid, drawn by MPL-licensed
+code) and the screenshots under docs/, is under the Mozilla Public License 2.0.

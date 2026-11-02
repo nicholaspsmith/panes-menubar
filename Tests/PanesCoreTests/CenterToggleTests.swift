@@ -39,4 +39,28 @@ final class CenterToggleTests: XCTestCase {
         // Moved off it by more than that: the column again.
         XCTAssertEqual(press(column.offsetBy(dx: 40, dy: 0)), column)
     }
+
+    func testFloorOnBuiltIn() {
+        XCTAssertEqual(CenterToggle.width(in: CGRect(x: 0, y: 0, width: 1512, height: 900)), 1000)
+    }
+
+    func testHalfOnWideDisplay() {
+        XCTAssertEqual(CenterToggle.width(in: CGRect(x: 0, y: 0, width: 2560, height: 900)), 1280)
+    }
+
+    func testCappedAtVisibleWidth() {
+        XCTAssertEqual(CenterToggle.width(in: CGRect(x: 0, y: 0, width: 900, height: 900)), 900)
+    }
+
+    func testColumnRecognisedWhenAppMinimumWins() {
+        let small = CGRect(x: 0, y: 30, width: 1512, height: 859)
+        let wide = CGRect(x: 206, y: 30, width: 1100, height: 859)   // app minimum beat the 1000 column
+        let next = CenterToggle.next(window: wide, visible: small)
+        XCTAssertEqual(next, CenterToggle.box(in: small))
+        XCTAssertEqual(next.width, 1000)
+        // A box-shaped window is not the column; a maximized one is not either.
+        let box = CenterToggle.box(in: small)
+        XCTAssertEqual(CenterToggle.next(window: box, visible: small), CenterToggle.column(in: small))
+        XCTAssertEqual(CenterToggle.next(window: small, visible: small), CenterToggle.column(in: small))
+    }
 }
