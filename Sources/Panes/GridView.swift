@@ -44,7 +44,10 @@ class GridView: NSView {
         var shade: CGFloat = 1
         var selectionAlpha: CGFloat = 1
 
-        static let menu = Style(insets: NSEdgeInsets(top: 6, left: 16, bottom: 6, right: 16),
+        /// The panel's outer edges sit on the separators' ends: the cells
+        /// are inset from them by the panel's outset.
+        static let menu = Style(insets: NSEdgeInsets(top: 6, left: GridMenuView.separatorInsets.left + GridView.panelOutset,
+                                                     bottom: 6, right: GridMenuView.separatorInsets.right + GridView.panelOutset),
                                 gap: (3, 2), radius: (4, 2.5), labelSize: 11,
                                 backing: NSColor.labelColor.withAlphaComponent(0.06),
                                 emptyCell: NSColor.labelColor.withAlphaComponent(0.08),
@@ -58,24 +61,23 @@ class GridView: NSView {
                                    shade: 0.12, selectionAlpha: 0.3)
     }
 
+    /// How far the backing panel reaches past the cells on every side.
+    static let panelOutset: CGFloat = 2
+
     let model: Model
     let style: Style
     private let onSelect: (LayoutGrid, GridSelection) -> Void
     private(set) var grid = LayoutGrid()
-    /// The grid's own size, centred in the view (nil: it fills the view
-    /// inside the insets).
-    private let gridSize: CGSize?
     private var activeCells: Set<GridCell> = []
     private var otherCells: Set<GridCell> = []
     private var anchor: GridCell?
     private var selection: GridSelection?
     private var hover: GridCell?
 
-    init(frame: NSRect, model: Model, style: Style, grid: LayoutGrid = LayoutGrid(), gridSize: CGSize? = nil,
+    init(frame: NSRect, model: Model, style: Style, grid: LayoutGrid = LayoutGrid(),
          onSelect: @escaping (LayoutGrid, GridSelection) -> Void) {
         self.model = model
         self.style = style
-        self.gridSize = gridSize
         self.onSelect = onSelect
         super.init(frame: frame)
         setAccessibilityRole(.group)
@@ -116,11 +118,10 @@ class GridView: NSView {
     // MARK: Geometry
 
     /// Where the cells are drawn and hit-tested: the view inside the insets,
-    /// or the grid's own size centred there.
+    /// stretched to whatever width the view has.
     private var gridRect: NSRect {
         let i = style.insets
-        let room = NSRect(x: i.left, y: i.top, width: bounds.width - i.left - i.right, height: bounds.height - i.top - i.bottom)
-        return gridSize.map { GridPlacement.centred($0, in: room) } ?? room
+        return GridPlacement.rect(in: bounds.size, left: i.left, top: i.top, right: i.right, bottom: i.bottom)
     }
 
     private func rect(for cell: GridCell) -> NSRect {
@@ -145,7 +146,8 @@ class GridView: NSView {
         let accent = NSColor.controlAccentColor
         if let backing = style.backing {
             backing.setFill()
-            NSBezierPath(roundedRect: gridRect.insetBy(dx: -2, dy: -2), xRadius: 7, yRadius: 7).fill()
+            let o = Self.panelOutset
+            NSBezierPath(roundedRect: gridRect.insetBy(dx: -o, dy: -o), xRadius: 7, yRadius: 7).fill()
         }
         let radius = isFine ? style.radius.fine : style.radius.coarse
         for c in grid.cells {
@@ -243,23 +245,36 @@ class GridView: NSView {
     }
 }
 
-/// The grid at the top of the menu, shaped like the target display's visible
-/// frame: always the 8×8 half-cell grid (holding keys does not change it),
-/// drawn at a fixed size and centred however wide the menu is. The menu
-/// closes once a cell is picked.
+/// The grid in the menu: always the 8×8 half-cell grid (holding keys does
+/// not change it), as wide as the menu's separator lines above and below it
+/// however wide the menu is, and as tall as a 216 pt grid shaped like the
+/// target display's visible frame. The cells stretch with the width, so the
+/// aspect ratio is only roughly the display's. The menu closes once a cell is
+/// picked.
 final class GridMenuView: GridView {
     static let width: CGFloat = 248
 
+    /// Where macOS draws a menu's separator lines, in points from the menu's
+    /// left and right edges. AppKit has no API for it, so it was measured:
+    /// in the 2x capture of the Panes 1.0.1 menu on macOS 27 (docs/menu.png
+    /// at 1.0.1, a 274 pt menu, 548 px), every separator row is lit from
+    /// x = 60 px through 515 px, i.e. 30 pt to 258 pt: 30 pt from the left
+    /// edge and 16 pt from the right. The item view spans the whole menu
+    /// width from x = 0.
+    static let separatorInsets = (left: CGFloat(30), right: CGFloat(16))
+
+    /// The grid's height: what a 216 pt wide grid shaped like the display
+    /// would be (the height the menu has always had), kept between 80 and 200.
+    static let heightBasis: CGFloat = 216
+
     init(model: Model, onSelect: @escaping (LayoutGrid, GridSelection) -> Void) {
         let i = Style.menu.insets
-        let gridW = Self.width - i.left - i.right
         let aspect = model.visible.height > 0 ? model.visible.width / model.visible.height : 1.6
-        let gridH = min(max((gridW / aspect).rounded(), 80), 200)
+        let gridH = min(max((Self.heightBasis / aspect).rounded(), 80), 200)
         super.init(frame: NSRect(x: 0, y: 0, width: Self.width, height: gridH + i.top + i.bottom),
-                   model: model, style: .menu, grid: .fine, gridSize: CGSize(width: gridW, height: gridH),
-                   onSelect: onSelect)
-        // The menu widens its item views to its own width; the grid stays
-        // its size, centred in the wider view.
+                   model: model, style: .menu, grid: .fine, onSelect: onSelect)
+        // The menu widens its item views to its own width; the grid
+        // stretches with it, between the separators' ends.
         autoresizingMask = [.width]
     }
 

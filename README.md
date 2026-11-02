@@ -31,9 +31,9 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.0.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.1.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the centred 8×8 layout grid; the window actions with their shortcuts; then Settings, Icon and Quit Panes"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the 8×8 layout grid, as wide as the separator lines above and below it; the window actions with their shortcuts; then Settings, Icon and Quit Panes"></p>
 
 ## Requirements
 
@@ -157,8 +157,9 @@ and never starts a chord.
   then **Night Shift** with its Warmth slider and **Schedule…** (see
   [Night Shift](#night-shift)).
 - **The layout grid**: the display the front window is on, cut into 8×8
-  [half-cells](#half-cells) at its visible frame's aspect ratio, centred in
-  the menu (unlabelled: the [cell keys](#cell-keys) name the 4×4 cells).
+  [half-cells](#half-cells), as wide as the separator lines above and below
+  it and roughly as tall as the display's shape (unlabelled: the
+  [cell keys](#cell-keys) name the 4×4 cells).
   Click a cell and the window fills it; drag across cells and the selection
   highlights as you go, and the window fills it on release (a 4×8 drag from
   the top-left is the left half).
