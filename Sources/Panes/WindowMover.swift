@@ -109,20 +109,27 @@ final class WindowMover {
         let window: AXWindow
         let animation: FrameAnimation
         let visible: CGRect
-        let start = CACurrentMediaTime()
+        var clock: GlideClock
+        /// The frame set on the first tick; the clock waits for the window to read it back.
+        var firstStep: CGRect?
         var timer: Timer?
         var link: CADisplayLink?
+        /// One-shot backstop for a display link that dies mid-glide.
+        var safety: Timer?
         func stop() {
             timer?.invalidate()
             link?.invalidate()
+            safety?.invalidate()
             timer = nil
             link = nil
+            safety = nil
         }
         var restoreEnhancedUI: () -> Void = {}
-        init(window: AXWindow, animation: FrameAnimation, visible: CGRect) {
+        init(window: AXWindow, animation: FrameAnimation, visible: CGRect, frameInterval: TimeInterval) {
             self.window = window
             self.animation = animation
             self.visible = visible
+            self.clock = GlideClock(created: CACurrentMediaTime(), frameInterval: frameInterval)
         }
     }
 
@@ -169,7 +176,8 @@ final class WindowMover {
         let frameInterval = 1 / max(refreshRate, 1)
         let step = AnimationPacing.stepInterval(setCost: setCost[window.pid], reduceMotion: reduceMotion,
                                                 refreshRate: refreshRate)
-        let g = Glide(window: window, animation: FrameAnimation(from: from, to: to), visible: visible)
+        let g = Glide(window: window, animation: FrameAnimation(from: from, to: to), visible: visible,
+                    frameInterval: frameInterval)
         g.restoreEnhancedUI = window.withEnhancedUIOff {}
 
         guard let step else {
@@ -177,20 +185,45 @@ final class WindowMover {
             return
         }
         running[key] = g
+        // A display that sleeps or disconnects stops its link; without this the
+        // glide would never finish and Enhanced UI would never be restored.
+        let armSafety = { [weak self, weak g] (after: TimeInterval) in
+            guard let g else { return }
+            g.safety?.invalidate()
+            let t = Timer(timeInterval: after, repeats: false) { [weak self, weak g] _ in
+                guard let self, let g, self.running[key] === g else { return }
+                g.stop()
+                self.running[key] = nil
+                self.finish(g)
+            }
+            g.safety = t
+            RunLoop.main.add(t, forMode: .common)
+        }
+        let margin = 0.25
+        armSafety(frameInterval + g.animation.duration + margin)
         let tick = { [weak self, weak g] in
             guard let self, let g else { return }
-            let elapsed = CACurrentMediaTime() - g.start
+            let now = CACurrentMediaTime()
+            // Hold the clock until the window shows the first step: an app
+            // can take several frames to apply it (#21).
+            guard let first = g.firstStep else {
+                let f = g.animation.frame(at: frameInterval)
+                g.firstStep = f
+                self.setFrame(g, f)
+                return
+            }
+            let wasStarted = g.clock.elapsed != nil
+            let landed = g.window.frame.map { Self.reads($0, as: first) } ?? false
+            g.clock.tick(now: now, firstStepLanded: landed)
+            guard let elapsed = g.clock.elapsed else { return }
+            if !wasStarted { armSafety(g.animation.duration + margin) }
             if g.animation.isFinished(at: elapsed) {
                 g.stop()
                 self.running[key] = nil
                 self.finish(g)
                 return
             }
-            let f = g.animation.frame(at: elapsed)
-            let t0 = CACurrentMediaTime()
-            g.window.setPosition(f.origin)
-            g.window.setSize(f.size)
-            self.measure(g.window.pid, CACurrentMediaTime() - t0)
+            self.setFrame(g, g.animation.frame(at: elapsed))
         }
         if let screen, step <= frameInterval * 1.001 {
             // The app keeps up with a frame: step in sync with the display.
@@ -204,6 +237,19 @@ final class WindowMover {
             g.timer = timer
             RunLoop.main.add(timer, forMode: .common)
         }
+    }
+
+    private func setFrame(_ g: Glide, _ f: CGRect) {
+        let t0 = CACurrentMediaTime()
+        g.window.setPosition(f.origin)
+        g.window.setSize(f.size)
+        measure(g.window.pid, CACurrentMediaTime() - t0)
+    }
+
+    /// Whether `actual` is `step` to within a point or two (apps round sizes).
+    private static func reads(_ actual: CGRect, as step: CGRect) -> Bool {
+        abs(actual.minX - step.minX) <= 2 && abs(actual.minY - step.minY) <= 2
+            && abs(actual.width - step.width) <= 2 && abs(actual.height - step.height) <= 2
     }
 
     /// The screen with most of `ax` (AX/top-left coordinates) on it.
