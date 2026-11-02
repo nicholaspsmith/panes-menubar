@@ -93,6 +93,7 @@ final class XDRController {
 
     func start() {
         onBattery = Self.isOnBattery()
+        switchOffIfOnBattery()
         CGDisplayRegisterReconfigurationCallback({ _, flags, userInfo in
             guard let userInfo else { return }
             let controller = Unmanaged<XDRController>.fromOpaque(userInfo).takeUnretainedValue()

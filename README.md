@@ -16,8 +16,9 @@ A standalone macOS menu-bar app for your windows and your displays.
   Night Shift with a sunset-to-sunrise schedule.
 
 **Panes replaces Monitor Lizard.** From 1.0.0 it does everything Monitor
-Lizard did; the first time it starts it quits Monitor Lizard, turns off its
-Start at Login and brings its settings over (see
+Lizard did; whenever it starts it quits Monitor Lizard if it's running and
+turns off its Start at Login, and the first time it also brings its settings
+over (see
 [Coming from Monitor Lizard](#coming-from-monitor-lizard)). Its mascot is
 Monitor Lizard's too: **Armonitor**, the monitor lizard on the app icon.
 

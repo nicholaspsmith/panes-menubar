@@ -24,11 +24,13 @@ Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 - ⌥⌘C's column is at least 1000 pt wide.
 - Glides step at the display's refresh rate.
 - Panes needs macOS 14 or later.
+- Brightness Keys moved into Settings ▸.
 
 ### Fixed
 
 - XDR Brightness works on M5 Macs.
 - A glide always finishes, even if its display sleeps mid-move.
+- Armonitor's full-screen lap now skips when Reduce Motion is on.
 
 ## [0.14.0] - 2026-10-20
 
