@@ -553,6 +553,33 @@ final class App: NSObject, NSApplicationDelegate {
         refreshIcon(force: true)        // draws the chosen icon from how things are now
     }
 
+    /// What `choice` would put in the menu bar, for the Settings window's icon
+    /// tiles: the same drawing, the grid and Major Pane from the live window
+    /// map. The brightness icons are drawn at 65% rather than the live level,
+    /// so the shapes tell apart (Pie and Wedge are both full circles at 100%).
+    private func iconPreview(_ choice: IconChoice) -> NSImage {
+        let fraction: CGFloat = 0.65
+        switch choice {
+        case .grid:
+            return ScreenGridIcon.image(iconModel())
+        case .majorPane:
+            let m = iconModel()
+            return MajorPaneRenderer.image(art: .shipped, pose: MajorPanePose(state: MascotState.idle.rawValue,
+                                                                              lit: frontCells(on: m.display),
+                                                                              active: m.active))
+        case .armonitor:
+            return CharacterIcon.monitorLizard(brightness: fraction, nightShift: displayFeature?.nightShiftOn ?? false)
+        case .meter(let raw):
+            let color = meterAppearance.color
+            switch MeterStyle(rawValue: raw) {
+            case .gauge: return MeterIcon.gauge(fraction: fraction, color: color)
+            case .pie: return MeterIcon.pie(fraction: fraction, color: color)
+            case .wedge: return MeterIcon.wedge(fraction: fraction, color: color)
+            default: return MeterIcon.arc(fraction: fraction, color: color)
+            }
+        }
+    }
+
     @objc private func openSettings() {
         if settingsWindow == nil {
             let settings = SettingsModel(bindings: model, hooks: .init(
@@ -569,7 +596,8 @@ final class App: NSObject, NSApplicationDelegate {
                 setColor: { [weak self] in
                     self?.meterAppearance.color = $0
                     self?.drawDisplayIcon()
-                }))
+                },
+                preview: { [weak self] in self?.iconPreview($0) ?? NSImage() }))
             settingsWindow = SettingsWindowController(model: settings)
         }
         settingsWindow?.show()

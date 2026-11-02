@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.10.0] - 2026-11-02
+
+### Changed
+
+- The Settings window's icon picker is a row of tiles that show each icon as it would look in the menu bar, not a list of names. The meters and Armonitor are drawn at 65% brightness so their shapes tell apart.
+
 ## [1.9.0] - 2026-11-02
 
 ### Changed

@@ -51,6 +51,8 @@ final class SettingsModel: ObservableObject {
         var brightnessKeys = true
         var icon = IconChoice.grid
         var colorHex = ""
+        /// Each icon as it would look in the menu bar now.
+        var previews: [IconChoice: NSImage] = [:]
     }
 
     struct Hooks {
@@ -60,6 +62,7 @@ final class SettingsModel: ObservableObject {
         var setBrightnessKeys: (Bool) -> Void
         var setIcon: (IconChoice) -> Void
         var setColor: (NSColor) -> Void
+        var preview: (IconChoice) -> NSImage
     }
 
     @Published private(set) var loginEnabled = LoginItem.isEnabled
@@ -78,7 +81,9 @@ final class SettingsModel: ObservableObject {
     /// Re-read everything: the window is shown again, or a value changed.
     func refresh() {
         loginEnabled = LoginItem.isEnabled
-        current = hooks.read()
+        var snapshot = hooks.read()
+        for icon in Self.icons { snapshot.previews[icon.choice] = hooks.preview(icon.choice) }
+        current = snapshot
     }
 
     func setLogin(_ on: Bool) {
@@ -138,9 +143,7 @@ struct GeneralSettingsView: View {
                 }
             }
             Section("Menu Bar Icon") {
-                Picker("Icon", selection: Binding(get: { model.current.icon }, set: { model.setIcon($0) })) {
-                    ForEach(SettingsModel.icons, id: \.choice) { Text($0.title).tag($0.choice) }
-                }
+                IconTiles(model: model)
                 if model.isMeter {
                     colourPicker
                 }
@@ -191,6 +194,49 @@ struct GeneralSettingsView: View {
         ColorPicker("Custom Colour", selection: Binding(
             get: { Color(nsColor: MeterColor.color(fromHex: model.current.colorHex) ?? .systemGreen) },
             set: { model.setColor(NSColor($0)) }), supportsOpacity: false)
+    }
+}
+
+/// The icons side by side, each drawn as it would be in the menu bar now,
+/// its name under it; the chosen one is outlined in the accent colour.
+struct IconTiles: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(SettingsModel.icons, id: \.choice) { icon in
+                let chosen = model.current.icon == icon.choice
+                Button { model.setIcon(icon.choice) } label: {
+                    VStack(spacing: 6) {
+                        Group {
+                            if let image = model.current.previews[icon.choice] {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .interpolation(.none)
+                                    .aspectRatio(contentMode: .fit)
+                            }
+                        }
+                        .frame(width: 44, height: 30)
+                        Text(icon.title)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .foregroundStyle(chosen ? .primary : .secondary)
+                    }
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(chosen ? 0.10 : 0.04)))
+                    .overlay(RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(chosen ? Color.accentColor : Color.clear, lineWidth: 2))
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(icon.title)
+                .accessibilityAddTraits(chosen ? .isSelected : [])
+            }
+        }
+        .padding(.vertical, 2)
     }
 }
 
