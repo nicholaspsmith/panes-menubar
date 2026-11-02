@@ -213,7 +213,8 @@ final class WindowMover {
                 return
             }
             let wasStarted = g.clock.elapsed != nil
-            let landed = g.window.frame.map { Self.reads($0, as: first) } ?? false
+            // Read the window (two AX round-trips) only until the clock has started.
+            let landed = wasStarted ? false : (g.window.frame.map { Self.reads($0, as: first) } ?? false)
             g.clock.tick(now: now, firstStepLanded: landed)
             guard let elapsed = g.clock.elapsed else { return }
             if !wasStarted { armSafety(g.animation.duration + margin) }
