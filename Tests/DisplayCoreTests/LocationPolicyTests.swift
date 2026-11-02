@@ -38,6 +38,10 @@ final class LocationPolicyTests: XCTestCase {
         XCTAssertTrue(LocationPolicy.shouldLocate(hasPlace: true, placeDate: days(1), now: now, scheduleOpened: true))
     }
 
+    func testTimeZoneChangeLocates() {
+        XCTAssertTrue(LocationPolicy.shouldLocate(hasPlace: true, placeDate: days(1), now: now, scheduleOpened: false, timeZoneChanged: true))
+    }
+
     func testDateKeyMatchesMigration() {
         XCTAssertEqual(LocationPolicy.dateKey, MonitorLizardMigration.placeDateKey)
     }

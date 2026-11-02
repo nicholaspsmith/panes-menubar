@@ -14,8 +14,8 @@ public enum LocationPolicy {
     /// When the saved place was last known good (shared with the migration).
     public static let dateKey = MonitorLizardMigration.placeDateKey
 
-    public static func shouldLocate(hasPlace: Bool, placeDate: Date?, now: Date, scheduleOpened: Bool) -> Bool {
-        if scheduleOpened || !hasPlace { return true }
+    public static func shouldLocate(hasPlace: Bool, placeDate: Date?, now: Date, scheduleOpened: Bool, timeZoneChanged: Bool = false) -> Bool {
+        if scheduleOpened || timeZoneChanged || !hasPlace { return true }
         guard let placeDate else { return true }
         return now.timeIntervalSince(placeDate) > maxAge
     }

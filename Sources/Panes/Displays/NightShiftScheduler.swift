@@ -125,7 +125,7 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
 
     @objc private func timeZoneChanged() {
         if !placeIsLocation { place = SunTimes.coordinate(forTimeZone: TimeZone.current.identifier) }
-        locateIfNeeded()
+        locateIfNeeded(timeZoneChanged: true)  // a move: the saved place may be far off
         apply()
     }
 
@@ -179,11 +179,12 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
 
     /// Locates only when the sun is in use and `LocationPolicy` allows it: the
     /// saved place is missing or over 30 days old, or the Schedule window opened.
-    private func locateIfNeeded(scheduleOpened: Bool = false) {
+    private func locateIfNeeded(scheduleOpened: Bool = false, timeZoneChanged: Bool = false) {
         guard usesSun else { return }
         let placeDate = defaults.object(forKey: LocationPolicy.dateKey) as? Date
         guard LocationPolicy.shouldLocate(hasPlace: placeIsLocation, placeDate: placeDate,
-                                          now: Date(), scheduleOpened: scheduleOpened) else { return }
+                                          now: Date(), scheduleOpened: scheduleOpened,
+                                          timeZoneChanged: timeZoneChanged) else { return }
         locate()
     }
 
