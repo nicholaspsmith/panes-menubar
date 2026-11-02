@@ -36,6 +36,7 @@ let package = Package(
             dependencies: [
                 "PanesCore",
                 "PanesGlyph",
+                "DisplayCore",
                 .product(name: "StatusItemKit", package: "StatusItemKit"),
                 .product(name: "HotkeyKit", package: "HotkeyKit"),
             ]
