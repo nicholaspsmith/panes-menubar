@@ -25,6 +25,7 @@ final class NightShiftScheduleWindow {
             w.center()
             window = w
         }
+        scheduler.scheduleOpened()
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
     }

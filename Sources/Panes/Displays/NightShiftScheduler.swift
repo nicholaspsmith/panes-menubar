@@ -18,6 +18,7 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
     private static let tick: TimeInterval = 30
 
     private let backend: NightShiftBackend
+    private let defaults: UserDefaults
     private var timer: Timer?
     private var edges = NightShiftEdgeTracker()
     private let location = CLLocationManager()
@@ -34,7 +35,7 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
             if schedule.isEnabled && !oldValue.isEnabled {
                 (backend as? CoreBrightnessNightShift)?.turnOffSystemSchedule()
             }
-            if usesSun { locate() }
+            locateIfNeeded()
             restartTimer()
             apply()
         }
@@ -42,7 +43,7 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
 
     /// The warmth Night Shift reaches at the top of the ramp.
     @Published var warmth: Float {
-        didSet { UserDefaults.standard.set(warmth, forKey: Self.warmthKey); apply() }
+        didSet { defaults.set(warmth, forKey: Self.warmthKey); apply() }
     }
 
     /// Where the sun's times are worked out for: the Mac's location when
@@ -53,12 +54,13 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
     /// Called whenever the schedule changes Night Shift or its own settings.
     var onChange: (() -> Void)?
 
-    init(backend: NightShiftBackend) {
+    init(backend: NightShiftBackend, defaults: UserDefaults = .standard) {
         self.backend = backend
-        schedule = Self.load(NightShiftSchedule.self, Self.scheduleKey) ?? NightShiftSchedule()
-        warmth = UserDefaults.standard.object(forKey: Self.warmthKey) as? Float ?? max(0.5, backend.status().strength)
+        self.defaults = defaults
+        schedule = Self.load(NightShiftSchedule.self, Self.scheduleKey, defaults) ?? NightShiftSchedule()
+        warmth = defaults.object(forKey: Self.warmthKey) as? Float ?? max(0.5, backend.status().strength)
         super.init()
-        if let saved = Self.load(Coordinate.self, Self.placeKey) {
+        if let saved = Self.load(Coordinate.self, Self.placeKey, defaults) {
             place = saved
             placeIsLocation = true
         } else {
@@ -74,10 +76,14 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
         NotificationCenter.default.addObserver(self, selector: #selector(clockMoved), name: .NSSystemClockDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(timeZoneChanged), name: .NSSystemTimeZoneDidChange, object: nil)
         if schedule.isEnabled { (backend as? CoreBrightnessNightShift)?.turnOffSystemSchedule() }
-        if usesSun { locate() }
+        locateIfNeeded()
         restartTimer()
         apply()
     }
+
+    /// The Schedule window was opened: the one time a fresh saved place is
+    /// still refreshed (and Location asked for, if it never was).
+    func scheduleOpened() { locateIfNeeded(scheduleOpened: true) }
 
     private var usesSun: Bool { schedule.isEnabled && (schedule.on.anchor == .sun || schedule.off.anchor == .sun) }
 
@@ -119,13 +125,13 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
 
     @objc private func timeZoneChanged() {
         if !placeIsLocation { place = SunTimes.coordinate(forTimeZone: TimeZone.current.identifier) }
-        if usesSun { locate() }
+        locateIfNeeded()
         apply()
     }
 
     func apply() {
         guard schedule.isEnabled else { return }
-        if usesSun, Date().timeIntervalSince(lastLocated) > 6 * 3600 { locate() }
+        if Date().timeIntervalSince(lastLocated) > 6 * 3600 { locateIfNeeded() }
         let window = currentWindow
         var changed = false
         if let on = edges.update(inside: window != nil) {
@@ -171,7 +177,17 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
 
     // MARK: - Location
 
-    func locate() {
+    /// Locates only when the sun is in use and `LocationPolicy` allows it: the
+    /// saved place is missing or over 30 days old, or the Schedule window opened.
+    private func locateIfNeeded(scheduleOpened: Bool = false) {
+        guard usesSun else { return }
+        let placeDate = defaults.object(forKey: LocationPolicy.dateKey) as? Date
+        guard LocationPolicy.shouldLocate(hasPlace: placeIsLocation, placeDate: placeDate,
+                                          now: Date(), scheduleOpened: scheduleOpened) else { return }
+        locate()
+    }
+
+    private func locate() {
         switch location.authorizationStatus {
         case .notDetermined:
             location.requestWhenInUseAuthorization()
@@ -184,13 +200,22 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        switch manager.authorizationStatus {
+        authorizationChanged(manager.authorizationStatus)
+    }
+
+    func authorizationChanged(_ status: CLAuthorizationStatus) {
+        switch status {
         case .authorized, .authorizedAlways:
-            if usesSun { lastLocated = Date(); manager.requestLocation() }
+            if usesSun { lastLocated = Date(); location.requestLocation() }
         case .denied, .restricted:
-            placeIsLocation = false
-            place = SunTimes.coordinate(forTimeZone: TimeZone.current.identifier)
-            UserDefaults.standard.removeObject(forKey: Self.placeKey)
+            // Keep the saved place (and its date): the sun still works from it.
+            if let kept = LocationPolicy.placeKeptOnDenial(defaults: defaults, placeKey: Self.placeKey) {
+                place = kept
+                placeIsLocation = true
+            } else {
+                placeIsLocation = false
+                place = SunTimes.coordinate(forTimeZone: TimeZone.current.identifier)
+            }
             apply()
         default:
             break
@@ -201,6 +226,7 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
         guard let c = locations.last?.coordinate else { return }
         // Two decimals (about a kilometre) is far finer than the sun needs.
         let rounded = Coordinate(latitude: (c.latitude * 100).rounded() / 100, longitude: (c.longitude * 100).rounded() / 100)
+        defaults.set(Date(), forKey: LocationPolicy.dateKey)  // a fix, even an unchanged one, renews the place
         guard rounded != place || !placeIsLocation else { return }
         place = rounded
         placeIsLocation = true
@@ -216,11 +242,11 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
     // MARK: - Storage
 
     private func save<T: Encodable>(_ value: T, _ key: String) {
-        if let data = try? JSONEncoder().encode(value) { UserDefaults.standard.set(data, forKey: key) }
+        if let data = try? JSONEncoder().encode(value) { defaults.set(data, forKey: key) }
     }
 
-    private static func load<T: Decodable>(_ type: T.Type, _ key: String) -> T? {
-        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+    private static func load<T: Decodable>(_ type: T.Type, _ key: String, _ defaults: UserDefaults) -> T? {
+        guard let data = defaults.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(type, from: data)
     }
 }
