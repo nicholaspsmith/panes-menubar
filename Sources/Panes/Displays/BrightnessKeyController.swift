@@ -10,7 +10,7 @@ import DisplayCore
 
 /// Makes the keyboard's brightness keys drive the main external monitor —
 /// over DDC, or through DisplayServices where DDC has refused and macOS can
-/// dim the display itself. It listens for the plain brightness media keys —
+/// dim the display itself. It matches the plain brightness media keys —
 /// the ones an Apple keyboard sends, and the ones KeyLight posts for F1/F2 on
 /// other boards — and swallows a press only when the main display is a
 /// monitor we control; otherwise the key passes through and macOS dims the
@@ -18,34 +18,40 @@ import DisplayCore
 /// keys go on to dim the panel further (`BrightnessKeys.route`).
 /// Ctrl+brightness is not bound, so KeyLight still gets it.
 ///
-/// Needs Accessibility, like every event tap. The tap is only created once
-/// trusted; until then `isWaitingForTrust` is true and the menu says so.
+/// It owns no event tap: Panes's one `HotkeyTap` carries `bindings` beside
+/// the window shortcuts and sends their tokens to `handle(token:)`. With the
+/// Brightness Keys off, `bindings` is empty, so the tap never sees a match
+/// and every press goes to macOS.
 final class BrightnessKeyController {
     static let enabledKey = "brightnessKeys"
 
     /// NX_KEYTYPE_BRIGHTNESS_UP / _DOWN, no modifiers.
-    private static let bindings: [Binding] = [
+    private static let allBindings: [Binding] = [
         Binding(token: "brightness.up", trigger: .mediaKey(2, [])),
         Binding(token: "brightness.down", trigger: .mediaKey(3, [])),
     ]
+    private static let tokens = Set(allBindings.map(\.token))
 
-    private let tap: HotkeyTap
-    private var trustTimer: Timer?
     /// Where a press in this direction goes.
     private let route: (BrightnessKeys.Direction) -> BrightnessKeys.Route
     private let stepExternal: (CGDirectDisplayID, BrightnessKeys.Direction) -> Void
     private let stepDim: (BrightnessKeys.Direction) -> Void
     private let stepBoost: (BrightnessKeys.Direction) -> Void
 
+    /// Called when `bindings` changes (the Brightness Keys turned on or off),
+    /// so the tap's owner can hand the tap its new binding set.
+    var onBindingsChanged: (() -> Void)?
+
     var isEnabled: Bool {
         didSet {
             UserDefaults.standard.set(isEnabled, forKey: Self.enabledKey)
-            isEnabled ? start() : stop()
+            if isEnabled != oldValue { onBindingsChanged?() }
         }
     }
 
-    var isTrusted: Bool { tap.isTrusted }
-    var isWaitingForTrust: Bool { isEnabled && !tap.isTrusted }
+    /// The bindings to add to the shared tap: both brightness keys while
+    /// enabled, none while off.
+    var bindings: [Binding] { isEnabled ? Self.allBindings : [] }
 
     init(route: @escaping (BrightnessKeys.Direction) -> BrightnessKeys.Route,
          stepExternal: @escaping (CGDirectDisplayID, BrightnessKeys.Direction) -> Void,
@@ -57,55 +63,12 @@ final class BrightnessKeyController {
         self.stepBoost = stepBoost
         // On by default: an absent key reads as enabled.
         isEnabled = UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true
-        var handler: ((String) -> Bool)!
-        tap = HotkeyTap(bindings: Self.bindings, onMatch: { handler($0) })
-        handler = { [weak self] token in self?.handle(token) ?? false }
     }
 
-    func start() {
-        guard isEnabled else { return }
-        if !tap.isTrusted { tap.requestTrust() }
-        startTapIfPossible()
-    }
-
-    func stop() {
-        trustTimer?.invalidate()
-        trustTimer = nil
-        tap.stop()
-    }
-
-    /// Ask again for Accessibility (the menu row).
-    func requestTrust() {
-        tap.requestTrust()
-        startTapIfPossible()
-    }
-
-    /// Other apps re-create their taps head-inserted in front of ours; called
-    /// from the poll tick to keep ours frontmost.
-    func reassert() {
-        guard isEnabled, tap.isTrusted, tap.isRunning else { return }
-        tap.stop()
-        tap.start()
-    }
-
-    private func startTapIfPossible() {
-        // Gate on trust, not on start()'s return: an untrusted process gets an
-        // inert tap that a later grant never wakes up.
-        guard tap.isTrusted else {
-            if trustTimer == nil {
-                trustTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-                    guard let self, self.tap.isTrusted else { return }
-                    self.startTapIfPossible()
-                }
-            }
-            return
-        }
-        trustTimer?.invalidate()
-        trustTimer = nil
-        if !tap.isRunning { tap.start() }
-    }
-
-    private func handle(_ token: String) -> Bool {
+    /// A press the shared tap matched. Returns true to swallow it, false for
+    /// a token that isn't a brightness key, or a press that goes to macOS.
+    func handle(token: String) -> Bool {
+        guard isEnabled, Self.tokens.contains(token) else { return false }
         let direction: BrightnessKeys.Direction = token == "brightness.up" ? .up : .down
         switch route(direction) {
         case .external(let id): stepExternal(id, direction)
@@ -115,4 +78,7 @@ final class BrightnessKeyController {
         }
         return true
     }
+
+    /// Whether this token is one of the brightness keys'.
+    static func isBrightnessToken(_ token: String) -> Bool { tokens.contains(token) }
 }

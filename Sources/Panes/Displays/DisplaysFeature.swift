@@ -6,6 +6,7 @@
 
 import AppKit
 import DisplayCore
+import HotkeyKit
 import StatusItemKit
 import UserNotifications
 
@@ -43,7 +44,34 @@ final class DisplaysFeature: NSObject {
     /// Control Center move these while the menu is open.
     var systemBrightnessRows: [CGDirectDisplayID: SliderRow] = [:]
     private var fixInProgress = false
-    private var brightnessKeys: BrightnessKeyController!
+    /// The brightness keys' routing. Panes's one `HotkeyTap` carries its
+    /// bindings (`brightnessBindings`) and sends it their presses
+    /// (`handleBrightness`). Made on first use, so it exists before `start()`.
+    private lazy var brightnessKeys: BrightnessKeyController = {
+        let keys = BrightnessKeyController(
+            route: { [weak self] direction in
+                guard let self else { return .passThrough }
+                let builtIn = self.model.entries.first { $0.info.isBuiltIn }
+                return BrightnessKeys.route(
+                    among: self.model.entries.map {
+                        BrightnessKeys.Display(id: $0.info.id, isMain: $0.info.isMain,
+                                               isBuiltIn: $0.info.isBuiltIn, source: $0.brightnessSource)
+                    },
+                    direction: direction,
+                    builtInBrightness: builtIn.flatMap { self.model.liveSystemBrightness($0.info.id) },
+                    dimLevel: self.dimmer.level,
+                    dimAvailable: self.dimmer.isAvailable,
+                    xdrEnabled: self.xdr.isEnabled,
+                    boost: self.xdr.boost
+                )
+            },
+            stepExternal: { [weak self] id, direction in self?.model.stepBrightness(id, direction) },
+            stepDim: { [weak self] direction in self?.stepDim(direction) },
+            stepBoost: { [weak self] direction in self?.stepBoost(direction) }
+        )
+        keys.onBindingsChanged = { [weak self] in self?.onBrightnessBindingsChanged?() }
+        return keys
+    }()
     /// XDR brightness for the built-in panel; off at every launch.
     let xdr = XDRController()
     /// Dimming the built-in panel below macOS's lowest lit brightness; off at
@@ -64,6 +92,20 @@ final class DisplaysFeature: NSObject {
     /// Whether the Armonitor icon is the one showing. The tongue and the
     /// full-screen lap act only then.
     var isArmonitorShown: () -> Bool = { false }
+    /// Called when `brightnessBindings` changes (Brightness Keys turned on or
+    /// off), so the owner hands its tap the new binding set.
+    var onBrightnessBindingsChanged: (() -> Void)?
+
+    /// The brightness keys' bindings for the owner's `HotkeyTap`, after its
+    /// own. Empty while the Brightness Keys are off.
+    var brightnessBindings: [Binding] { brightnessKeys.bindings }
+
+    /// A press the owner's tap matched. True to swallow it; false for a token
+    /// that isn't a brightness key's, or a press that goes on to macOS.
+    func handleBrightness(token: String) -> Bool { brightnessKeys.handle(token: token) }
+
+    /// Whether this token is one of `brightnessBindings`'.
+    func isBrightnessToken(_ token: String) -> Bool { BrightnessKeyController.isBrightnessToken(token) }
 
     init(status: StatusItemController) {
         self.status = status
@@ -89,28 +131,6 @@ final class DisplaysFeature: NSObject {
         // bar before he leaves it.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.screenLapIfArmonitor() }
 
-        brightnessKeys = BrightnessKeyController(
-            route: { [weak self] direction in
-                guard let self else { return .passThrough }
-                let builtIn = self.model.entries.first { $0.info.isBuiltIn }
-                return BrightnessKeys.route(
-                    among: self.model.entries.map {
-                        BrightnessKeys.Display(id: $0.info.id, isMain: $0.info.isMain,
-                                               isBuiltIn: $0.info.isBuiltIn, source: $0.brightnessSource)
-                    },
-                    direction: direction,
-                    builtInBrightness: builtIn.flatMap { self.model.liveSystemBrightness($0.info.id) },
-                    dimLevel: self.dimmer.level,
-                    dimAvailable: self.dimmer.isAvailable,
-                    xdrEnabled: self.xdr.isEnabled,
-                    boost: self.xdr.boost
-                )
-            },
-            stepExternal: { [weak self] id, direction in self?.model.stepBrightness(id, direction) },
-            stepDim: { [weak self] direction in self?.stepDim(direction) },
-            stepBoost: { [weak self] direction in self?.stepBoost(direction) }
-        )
-        brightnessKeys.start()
         xdr.start()
         dimmer.start()
         lastBuiltInBrightness = model.entries.first { $0.info.isBuiltIn }?.systemBrightness
@@ -128,8 +148,6 @@ final class DisplaysFeature: NSObject {
     func safetyPoll() {
         model.readSystemBrightness()
         refreshIcon()
-        // Optional-safe: the first poll can fire before start().
-        brightnessKeys?.reassert()
     }
 
     // MARK: - Icon
@@ -143,8 +161,6 @@ final class DisplaysFeature: NSObject {
     var mainBrightnessFraction: Double { Double(shown.fraction) }
     /// Whether Night Shift is on, as of the last icon refresh.
     var nightShiftOn: Bool { shown.nightShift }
-    /// The Brightness Keys need Accessibility and do not have it yet.
-    var isWaitingForTrust: Bool { brightnessKeys?.isWaitingForTrust ?? false }
     /// Whether the lizard's tongue is out.
     var tongueActive: Bool { Date() < tongueUntil }
     /// Whether the full-screen lap is running (the lizard is off the icon).
@@ -315,9 +331,6 @@ final class DisplaysFeature: NSObject {
             toolTip: "The keyboard's brightness keys change the main monitor's brightness"
         ) { [weak self] on in self?.brightnessKeys.isEnabled = on }]
     }
-
-    /// Ask for the Accessibility permission the Brightness Keys need.
-    func requestTrust() { brightnessKeys.requestTrust() }
 
     func disabledItem(_ title: String) -> NSMenuItem {
         NSMenuItem(title: title, action: nil, keyEquivalent: "")

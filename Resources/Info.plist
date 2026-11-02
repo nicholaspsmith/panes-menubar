@@ -18,5 +18,9 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSLocationUsageDescription</key>
+	<string>Panes uses your location to work out sunset and sunrise for the Night Shift schedule.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Panes uses your location to work out sunset and sunrise for the Night Shift schedule.</string>
 </dict>
 </plist>

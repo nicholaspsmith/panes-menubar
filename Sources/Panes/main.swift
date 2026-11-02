@@ -14,6 +14,9 @@ import StatusItemKit
 /// shortcuts (taken by a HotkeyKit tap before the front app sees them), a
 /// 4×4 layout grid in the menu, and snapping a dragged window to the display
 /// edges. Moves go through the Accessibility API and glide into place.
+/// Above the grid, the displays (Monitor Lizard's, `DisplaysFeature`):
+/// brightness, contrast, resolution, Night Shift, and the brightness keys,
+/// which ride on the same tap as the window shortcuts.
 final class App: NSObject, NSApplicationDelegate {
     private var status: StatusItemController!
     /// Steps this icon aside while a menu-bar manager reveals hidden items.
@@ -22,6 +25,8 @@ final class App: NSObject, NSApplicationDelegate {
     private let mover = WindowMover()
     private lazy var snapper = EdgeSnapper(mover: mover)
     private var tap: HotkeyTap!
+    /// The displays, Night Shift and the brightness keys.
+    private var displays: DisplaysFeature!
     private let chordTap = ChordTap()
     /// The grid that covers the screen while ⌥⌘ is held.
     private let overlay = GridOverlay()
@@ -75,8 +80,15 @@ final class App: NSObject, NSApplicationDelegate {
         mascot.start()
         self.mascot = mascot
 
-        tap = HotkeyTap(bindings: model.tapBindings) { [weak self] token in self?.handle(token: token) ?? false }
-        model.onChange = { [weak self] bindings in self?.tap.setBindings(bindings) }
+        let displays = DisplaysFeature(status: status)
+        // Task A4 makes these follow the icon choice.
+        displays.isArmonitorShown = { false }
+        displays.onIconInputsChanged = { [weak self] in self?.refreshIcon(force: true) }
+        displays.onBrightnessBindingsChanged = { [weak self] in self?.updateTapBindings() }
+        self.displays = displays
+
+        tap = HotkeyTap(bindings: tapBindings) { [weak self] token in self?.handle(token: token) ?? false }
+        model.onChange = { [weak self] _ in self?.updateTapBindings() }
         mover.onMoved = { [weak self] in
             self?.refreshIcon(force: true)
             if self?.mascotChosen == true { self?.mascot?.bark() }
@@ -98,7 +110,10 @@ final class App: NSObject, NSApplicationDelegate {
             self?.menuOpen = true
             self?.holdKeyDown()
         }
-        status.onMenuDidClose = { [weak self] in self?.menuOpen = false }
+        status.onMenuDidClose = { [weak self] in
+            self?.menuOpen = false
+            self?.displays.refreshIcon()
+        }
         chordTap.onFinish = { [mover] window, selection, display in
             mover.move(window, to: LayoutGrid().frame(for: selection, in: display.visibleFrame),
                        visible: display.visibleFrame)
@@ -106,6 +121,7 @@ final class App: NSObject, NSApplicationDelegate {
 
         if !tap.isTrusted { tap.requestTrust() }
         startIfTrusted()
+        startDisplays()
 
         // Redraw the icon when windows are likely to have moved, besides the poll.
         let ws = NSWorkspace.shared.notificationCenter
@@ -120,7 +136,29 @@ final class App: NSObject, NSApplicationDelegate {
         minuteCue.start()
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        // No XDR table or dim overlay may outlive the app.
+        displays?.stop()
+    }
+
+    /// Starts the displays feature: DDC, Night Shift and its schedule, XDR and
+    /// Dim. The one place it starts.
+    private func startDisplays() {
+        displays.start()
+        // start() doesn't report its first reading; draw from it now.
+        displays.refreshIcon()
+    }
+
     // MARK: - Tap lifecycle
+
+    /// The one tap's bindings: the window shortcuts first (first match wins),
+    /// then the brightness keys (none while they are off).
+    private var tapBindings: [Binding] { model.tapBindings + displays.brightnessBindings }
+
+    /// Every change to either set goes through here, so neither drops the other.
+    private func updateTapBindings() {
+        tap?.setBindings(tapBindings)
+    }
 
     private func startIfTrusted() {
         // Gate on trust, not on start()'s return: an untrusted process can get
@@ -147,9 +185,12 @@ final class App: NSObject, NSApplicationDelegate {
 
     private func poll() {
         refreshIcon()
+        pollCount += 1
+        // Every 60 s: the displays' safety net for a missed change notification.
+        if pollCount % 40 == 0 { displays.safetyPoll() }
         // Every ~6 s, re-create the tap so it stays at the head of the session
         // taps (another app's tap inserted later would see our keys first).
-        pollCount += 1
+        // The brightness keys ride on it, so this keeps them frontmost too.
         if pollCount % 4 == 0, let tap, tap.isTrusted, tap.isRunning {
             tap.stop()
             tap.start()
@@ -198,9 +239,15 @@ final class App: NSObject, NSApplicationDelegate {
 
     // MARK: - Shortcuts
 
+    /// Brightness keys go to the displays; window shortcuts to `handleWindow`.
+    private func handle(token: String) -> Bool {
+        if displays.isBrightnessToken(token) { return displays.handleBrightness(token: token) }
+        return handleWindow(token: token)
+    }
+
     /// Swallow the key only when there is a window to act on and the action
     /// applies to it; otherwise the front app gets the key as usual.
-    private func handle(token: String) -> Bool {
+    private func handleWindow(token: String) -> Bool {
         // The shortcut tap may see a key before the chord tap does.
         holdKeyDown()
         guard !model.isRecording, let action = WindowAction(rawValue: token),
@@ -282,6 +329,9 @@ final class App: NSObject, NSApplicationDelegate {
         menu.autoenablesItems = false
         menuTarget = trusted ? AXWindow.focused() : nil
 
+        displays.addMenuSection(to: menu)
+        menu.addItem(.separator())
+
         let gridItem = NSMenuItem()
         gridItem.view = makeGrid()
         menu.addItem(gridItem)
@@ -329,6 +379,7 @@ final class App: NSObject, NSApplicationDelegate {
                 title: "Grid on Hold ⌥⌘", isOn: self.holdGridEnabled,
                 toolTip: "Hold ⌥⌘ on its own and a grid covers the screen; click or drag across cells"
             ) { [weak self] on in self?.setHoldGrid(on) })
+            for item in self.displays.settingsItems() { sub.addItem(item) }
             sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
         }, belowSettings: { menu in
             // Icon sits in the main menu, right below Settings.
