@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.9.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.10.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
 
@@ -337,7 +337,7 @@ running for the fix to hold.
 
 ## The icon
 
-**Settings… ▸ Icon** picks what sits in the menu bar:
+**Settings… ▸ Icon** picks what sits in the menu bar, from a row of tiles that each show the icon as it would look there:
 
 - **Screen Grid** (the default): the windows on your display, as tiles.
 - **Major Pane**: the commander of windows, his pane lit where the front
