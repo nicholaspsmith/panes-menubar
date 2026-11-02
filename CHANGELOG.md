@@ -8,6 +8,28 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.0.0] - 2026-11-01
+
+### Added
+
+- Panes now does Monitor Lizard's job too: a section per display with brightness, contrast and resolution, the keyboard's brightness keys on an external monitor, Dim and XDR Brightness on the built-in screen, and Night Shift with its schedule. On its first launch it quits Monitor Lizard, turns off its Start at Login and keeps its settings.
+- Icon ▸ also offers Armonitor (Monitor Lizard's character) and the Arc, Gauge, Pie and Wedge meters of the main display's brightness, beside the Screen Grid and Major Pane.
+- When the built-in screen's preset can't brighten past full, a line under XDR Brightness says which preset to pick: Apple XDR Display (P3-1600 nits).
+
+### Changed
+
+- The Screen Grid is now the default icon.
+- Armonitor is Panes's mascot and app icon.
+- Night Shift's schedule asks for Location only when its saved place is missing or older than 30 days, and keeps that place if Location is denied.
+- ⌥⌘C's column is at least 1000 pt wide.
+- Glides step at the display's refresh rate.
+- Panes needs macOS 14 or later.
+
+### Fixed
+
+- XDR Brightness works on M5 Macs.
+- A glide always finishes, even if its display sleeps mid-move.
+
 ## [0.14.0] - 2026-10-20
 
 ### Changed
