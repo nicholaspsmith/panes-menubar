@@ -69,6 +69,14 @@ final class AnimationPacingTests: XCTestCase {
         XCTAssertEqual(AnimationPacing.stepInterval(setCost: nil, reduceMotion: false), 1.0 / 120)
     }
 
+    func testSixtyHertzInterval() {
+        XCTAssertEqual(AnimationPacing.stepInterval(setCost: nil, reduceMotion: false, refreshRate: 60), 1.0 / 60)
+    }
+
+    func testSlowAppCoarsens() {
+        XCTAssertEqual(AnimationPacing.stepInterval(setCost: 0.03, reduceMotion: false, refreshRate: 120), 0.03)
+    }
+
     func testSlowAppGetsFewerSteps() {
         XCTAssertEqual(AnimationPacing.stepInterval(setCost: 0.03, reduceMotion: false), 0.03)
     }

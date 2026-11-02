@@ -111,6 +111,13 @@ final class WindowMover {
         let visible: CGRect
         let start = CACurrentMediaTime()
         var timer: Timer?
+        var link: CADisplayLink?
+        func stop() {
+            timer?.invalidate()
+            link?.invalidate()
+            timer = nil
+            link = nil
+        }
         var restoreEnhancedUI: () -> Void = {}
         init(window: AXWindow, animation: FrameAnimation, visible: CGRect) {
             self.window = window
@@ -151,12 +158,17 @@ final class WindowMover {
 
     private func startGlide(_ window: AXWindow, from: CGRect, to: CGRect, visible: CGRect) {
         let key = window.key
-        running[key]?.timer?.invalidate()
+        running[key]?.stop()
         running[key]?.restoreEnhancedUI()
         running[key] = nil
 
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        let step = AnimationPacing.stepInterval(setCost: setCost[window.pid], reduceMotion: reduceMotion)
+        // The display holding the target frame sets the pace.
+        let screen = Self.screen(holding: to)
+        let refreshRate = Double(screen?.maximumFramesPerSecond ?? 120)
+        let frameInterval = 1 / max(refreshRate, 1)
+        let step = AnimationPacing.stepInterval(setCost: setCost[window.pid], reduceMotion: reduceMotion,
+                                                refreshRate: refreshRate)
         let g = Glide(window: window, animation: FrameAnimation(from: from, to: to), visible: visible)
         g.restoreEnhancedUI = window.withEnhancedUIOff {}
 
@@ -165,11 +177,11 @@ final class WindowMover {
             return
         }
         running[key] = g
-        let timer = Timer(timeInterval: step, repeats: true) { [weak self, weak g] _ in
+        let tick = { [weak self, weak g] in
             guard let self, let g else { return }
             let elapsed = CACurrentMediaTime() - g.start
             if g.animation.isFinished(at: elapsed) {
-                g.timer?.invalidate()
+                g.stop()
                 self.running[key] = nil
                 self.finish(g)
                 return
@@ -180,9 +192,34 @@ final class WindowMover {
             g.window.setSize(f.size)
             self.measure(g.window.pid, CACurrentMediaTime() - t0)
         }
-        g.timer = timer
-        // Common modes: keep gliding while a menu is tracking.
-        RunLoop.main.add(timer, forMode: .common)
+        if let screen, step <= frameInterval * 1.001 {
+            // The app keeps up with a frame: step in sync with the display.
+            let target = LinkTarget(tick)
+            let link = screen.displayLink(target: target, selector: #selector(LinkTarget.fire))
+            g.link = link
+            // Common modes: keep gliding while a menu is tracking.
+            link.add(to: .main, forMode: .common)
+        } else {
+            let timer = Timer(timeInterval: step, repeats: true) { _ in tick() }
+            g.timer = timer
+            RunLoop.main.add(timer, forMode: .common)
+        }
+    }
+
+    /// The screen with most of `ax` (AX/top-left coordinates) on it.
+    private static func screen(holding ax: CGRect) -> NSScreen? {
+        let cocoa = Screens.cocoa(ax)
+        return NSScreen.screens.max { a, b in
+            let ia = a.frame.intersection(cocoa), ib = b.frame.intersection(cocoa)
+            return (ia.isNull ? 0 : ia.width * ia.height) < (ib.isNull ? 0 : ib.width * ib.height)
+        }
+    }
+
+    /// Objective-C target for a display link (which retains it until invalidated).
+    private final class LinkTarget: NSObject {
+        let action: () -> Void
+        init(_ action: @escaping () -> Void) { self.action = action }
+        @objc func fire() { action() }
     }
 
     private func measure(_ pid: pid_t, _ cost: TimeInterval) {
