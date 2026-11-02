@@ -33,7 +33,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 
 **Version 1.0.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The window half of the Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The window half of the Panes menu before 1.0.1: the old 4×4 layout grid with its cell keys (the menu now shows the 8×8 half-cell grid, centred), the window actions with their shortcuts, then Settings and Quit"></p>
 
 (The screenshot predates 1.0.0: the menu now opens with a section per
 display and Night Shift above the grid, the grid is the 8×8 half-cell grid,
@@ -65,7 +65,7 @@ centred, and there is an Icon submenu below Settings. See
 | `⌥⌘N` | move to the next display, keeping the window's relative frame |
 | `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two, when you let go of `⌥⌘` (see below) |
 | hold `⌥⌘` | a 4×4 grid over the screen: click or drag across cells (see below) |
-| hold `⌥⌘⇧` | the same grid in half-cells, 8×8 |
+| hold `⌥⌘⇧` | the hold-`⌥⌘` grid in half-cells, 8×8 (the menu's grid is always 8×8) |
 
 Each acts on the focused window of the frontmost app. A shortcut is
 swallowed only when it applies: with no movable window in front, nothing to

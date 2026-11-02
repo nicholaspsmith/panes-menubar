@@ -70,7 +70,7 @@ struct PreferencesView: View {
             }
             Text("One key fills that cell of the grid; two keys fill the rectangle between them "
                  + "(1 then 8 is the top half). Cells are 1 2 3 4 / 5 6 7 8 / 9 A B D / E F G H; C stays Center. "
-                 + "Hold ⌥⌘⇧ in the menu or on the overlay for half-cells.")
+                 + "The menu's grid is always half-cells; hold ⌥⌘⇧ on the overlay for half-cells.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
