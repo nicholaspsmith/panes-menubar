@@ -45,6 +45,8 @@ Settings. See [The menu](#the-menu).)
   the brightness keys
 - **Location** (optional), only for a Night Shift schedule that follows
   sunset and sunrise; without it the main city of your time zone is used
+- **Notifications** (optional), only asked the first time Panes needs to tell
+  you a TV-mode fix needs the display reconnected
 - Sibling checkouts of `StatusItemKit` and `HotkeyKit` next to this repo (to build)
 
 ## What it does
@@ -651,6 +653,10 @@ redistribute this software, including inside proprietary products, provided
 the copyright notice and license stay on these files and any modified
 versions of them are made available under the same license.
 
-The Major Pane artwork (`art/`, the generated frames, the icon and the
-pictures in `docs/`) is [CC BY-NC 4.0](art/LICENSE): see [NOTICE](NOTICE). It
-may not be used commercially.
+The Major Pane artwork (everything under `art/`, the generated
+`Sources/PanesGlyph/MajorPaneFrames.swift`, and `docs/animation.png`, the one
+picture in `docs/` that shows him) is [CC BY-NC 4.0](art/LICENSE): see
+[NOTICE](NOTICE). It may not be used commercially. The app icon
+(`Resources/bundle/AppIcon.icns`), `docs/mascot.png` and
+`docs/menubar-icon.png` show Armonitor and the Screen Grid, drawn by
+MPL-licensed code, and fall under the Mozilla Public License 2.0 with the rest.

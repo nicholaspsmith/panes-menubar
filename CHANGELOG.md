@@ -12,7 +12,7 @@ Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 
 ### Added
 
-- Panes now does Monitor Lizard's job too: a section per display with brightness, contrast and resolution, the keyboard's brightness keys on an external monitor, Dim and XDR Brightness on the built-in screen, and Night Shift with its schedule. On its first launch it quits Monitor Lizard, turns off its Start at Login and keeps its settings.
+- Panes now does Monitor Lizard's job too: a section per display with brightness, contrast and resolution, the keyboard's brightness keys on an external monitor, Dim and XDR Brightness on the built-in screen, and Night Shift with its schedule. When it starts, Panes quits Monitor Lizard if it's running, turns off its login item, and (once) brings over its settings.
 - Icon ▸ also offers Armonitor (Monitor Lizard's character) and the Arc, Gauge, Pie and Wedge meters of the main display's brightness, beside the Screen Grid and Major Pane.
 - When the built-in screen's preset can't brighten past full, a line under XDR Brightness says which preset to pick: Apple XDR Display (P3-1600 nits).
 
