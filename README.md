@@ -31,9 +31,9 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.6.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.7.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW section, open, with its Brightness, Contrast and Resolution sliders; the Night Shift section, open, with Enabled, Warmth, Schedule and a greyed On at 4:58 PM line; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings, Icon and Quit Panes"></p>
 
 ## Requirements
 
@@ -129,6 +129,11 @@ and never starts a chord.
 
 (Pictured at the top of this page.)
 
+Clicking an item leaves the menu open, so you can try one layout after
+another. The exceptions are Quit and the items ending in "…", which open a
+window (Preferences…, Schedule…, Custom Colour…). Each section heading folds its
+rows away, the chevron pointing down while folded and up while open.
+
 - **One section per display** (see [Displays and brightness](#displays-and-brightness)),
   then **Night Shift** with its Warmth slider and **Schedule…** (see
   [Night Shift](#night-shift)).
@@ -139,14 +144,14 @@ and never starts a chord.
   highlights as you go, and the window fills it on release (a 4×8 drag from
   the top-left is the left half).
   Cells under the front window are shaded in the accent colour, cells under
-  other windows on that display lightly. The menu closes once the window is
-  told where to go.
+  other windows on that display lightly. The menu stays open and the shading
+  follows the window to where it is going.
 - **Shortcuts**: the actions, folded under one row each time the menu
   opens. Click it and they open below it, in place, in their four groups
   (halves; quarters; Maximize, Center and Restore; Next Display), each showing
   its shortcut; click it again to fold them away. Clicking an action applies
   it to the window that was in front when the menu opened. Greyed when they
-  do not apply.
+  do not apply (Restore lights up once an action has moved the window).
 - **⚠ Grant Accessibility…**: shown only until Panes is trusted.
 - **No window to arrange**: shown, greyed, when no movable window is in front.
 - **⚠ macOS Edge Tiling Is On…**: shown when Edge Snapping is on and so is
@@ -197,8 +202,9 @@ tile by itself once the window leaves it.
 
 ## Displays and brightness
 
-The menu opens with one section per display, then Night Shift for the whole
-Mac:
+The menu opens with one section per display, headed by its name, then
+Night Shift for the whole Mac. Each section folds under its heading, and
+Panes remembers which are open (per display):
 
 | Row | What it does |
 |-----|--------------|
@@ -296,8 +302,9 @@ the panel draws more power and runs warmer.
 
 ## Night Shift
 
-The menu's **Night Shift** row toggles it, **Warmth** sets how warm it is,
-and **Schedule…** opens a small window:
+In the menu's **Night Shift** section, **Enabled** turns it on and off,
+**Warmth** sets how warm it is, a grey line says when the schedule next
+switches it ("On at 9:00 PM"), and **Schedule…** opens a small window:
 
 - **Turn on**: at sunset, or at a set time. Sunset can be moved up to three
   hours either way ("30 min before sunset").

@@ -97,7 +97,7 @@ final class WindowMover {
     /// Where the window is — or, mid-glide, where it is going, so a second
     /// press during a glide computes from (and Restore returns to) the
     /// settled frame rather than a frame halfway there.
-    private func currentFrame(_ window: AXWindow) -> CGRect? {
+    func currentFrame(_ window: AXWindow) -> CGRect? {
         if let pending = untiling[window.key] { return pending.to }
         if let glide = running[window.key] { return glide.animation.to }
         return window.frame

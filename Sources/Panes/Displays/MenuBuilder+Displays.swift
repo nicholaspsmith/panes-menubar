@@ -11,14 +11,22 @@ import DisplayCore
 /// The per-display blocks of the menu. Kept out of `DisplaysFeature.swift` so it stays
 /// the wiring and this stays the layout.
 extension DisplaysFeature {
-    func addDisplayBlock(_ entry: DisplayModel.Entry, to menu: NSMenu) {
-        let header = NSMenuItem(title: entry.info.name, action: nil, keyEquivalent: "")
-        header.isEnabled = false
-        if entry.info.isHDMI {
-            header.attributedTitle = headerTitle(entry.info.name, tag: "HDMI")
-        }
-        menu.addItem(header)
+    /// One display's rows, folded under a heading with its name; whether
+    /// it is open is remembered per display.
+    func addDisplaySection(_ entry: DisplayModel.Entry, to menu: NSMenu) {
+        let rows = NSMenu()
+        addDisplayRows(entry, to: rows)
+        let items = rows.items
+        rows.removeAllItems()
+        let info = entry.info
+        MenuSection.add(title: info.name, tag: info.isHDMI ? "HDMI" : nil,
+                        key: "display.\(info.vendorID).\(info.productID).\(info.serial)",
+                        items: items, to: menu)
+    }
 
+    /// The display's controls: brightness (and contrast), resolution, and
+    /// whether Night Shift works on it.
+    private func addDisplayRows(_ entry: DisplayModel.Entry, to menu: NSMenu) {
         switch entry.brightnessSource {
         case .system where entry.info.isBuiltIn:
             addBuiltInBrightnessRow(entry, to: menu)
@@ -162,12 +170,6 @@ extension DisplaysFeature {
         xdr
             ? "The bottom of the slider dims past the lowest brightness; the top brightens past full using the panel's HDR headroom."
             : "The bottom of the slider dims past the lowest brightness. Turn on XDR Brightness to brighten past full."
-    }
-
-    private func headerTitle(_ name: String, tag: String) -> NSAttributedString {
-        let s = NSMutableAttributedString(string: name, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: NSColor.secondaryLabelColor])
-        s.append(NSAttributedString(string: "   \(tag)", attributes: [.font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize), .foregroundColor: NSColor.tertiaryLabelColor]))
-        return s
     }
 
     @objc func pickMode(_ sender: NSMenuItem) {
