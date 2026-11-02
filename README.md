@@ -7,9 +7,9 @@
 A standalone macOS menu-bar app for your windows and your displays.
 
 - **Windows**: **global shortcuts** for halves, quarters, maximize, center,
-  restore and next display; a **4×4 layout grid** in the menu, and over the
-  whole screen while you hold `⌥⌘`; and **edge snapping** when you drag a
-  window to a display edge. A replacement for Rectangle.
+  restore and next display; an **8×8 layout grid** in the menu, and a 4×4
+  one over the whole screen while you hold `⌥⌘`; and **edge snapping** when
+  you drag a window to a display edge. A replacement for Rectangle.
 - **Displays**: an external monitor's brightness, contrast and resolution,
   the keyboard's brightness keys on that monitor, the MacBook's own screen
   from dimmer than macOS allows (Dim) to brighter than it allows (XDR), and
@@ -31,13 +31,9 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.0.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.0.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The window half of the Panes menu: the 4×4 layout grid with its cell keys, the window actions with their shortcuts, then Settings and Quit"></p>
-
-(The screenshot predates 1.0.0: the menu now opens with a section per
-display and Night Shift above the grid, and has an Icon submenu below
-Settings. See [The menu](#the-menu).)
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the Color LCD display section with its Brightness slider and XDR Brightness; Night Shift with its Warmth slider and Schedule; the centred 8×8 layout grid; the window actions with their shortcuts; then Settings, Icon and Quit Panes"></p>
 
 ## Requirements
 
@@ -64,7 +60,7 @@ Settings. See [The menu](#the-menu).)
 | `⌥⌘N` | move to the next display, keeping the window's relative frame |
 | `⌥⌘` + cell keys | fill one grid cell, or the rectangle between two, when you let go of `⌥⌘` (see below) |
 | hold `⌥⌘` | a 4×4 grid over the screen: click or drag across cells (see below) |
-| hold `⌥⌘⇧` | the same grid in half-cells, 8×8 |
+| hold `⌥⌘⇧` | the hold-`⌥⌘` grid in half-cells, 8×8 (the menu's grid is always 8×8) |
 
 Each acts on the focused window of the frontmost app. A shortcut is
 swallowed only when it applies: with no movable window in front, nothing to
@@ -123,10 +119,10 @@ taken only while a window is in front to arrange.
 Hold `⌥⌘` on its own (no other key, no mouse button) for a moment (0.35 s by
 default) and a dark grid fades in over the front window's display. It covers
 exactly the display's visible frame, below the menu bar and beside the Dock,
-so each cell sits over the very area a window filling it would take. The same
-4×4 grid as the menu, with the same cell labels and shading: click a cell, or
-drag across cells, and the front window fills it. The app you were in keeps
-focus throughout.
+so each cell sits over the very area a window filling it would take. A 4×4
+grid labelled with the [cell keys](#cell-keys), shaded like the menu's: click
+a cell, or drag across cells, and the front window fills it. The app you
+were in keeps focus throughout.
 
 - Let go of `⌥` or `⌘` and it fades out (a drag in progress is dropped).
 - Press any key while it is up, a cell key or a shortcut included, and it
@@ -143,13 +139,13 @@ Turn it off in **Settings ▸ Grid on Hold ⌥⌘**; set the delay in Preference
 
 ### Half-cells
 
-Hold `⌥⌘⇧` while the menu is open (or on the hold-⌥⌘ grid) and every cell
-splits into its own 2×2, an 8×8 grid of half-cells. Click one, or drag across
-several, to fill that area exactly as with the 4×4 grid; shading follows the
-finer cells. Let go of `⇧` to return to 4×4 (cell-key labels show only there).
-`⌥⌘⇧` on its own is never taken from apps and never starts a chord.
-
-![The menu's grid split into half-cells](docs/menu-fine.png)
+The menu's grid is always half-cells: each 4×4 cell split into its own 2×2,
+an 8×8 grid, and holding keys while the menu is open does not change it. On
+the hold-⌥⌘ grid, hold `⌥⌘⇧` for the same half-cells. Click one, or drag
+across several, to fill that area exactly as with the 4×4 grid; shading
+follows the finer cells. Let go of `⇧` on the hold-⌥⌘ grid to return to 4×4
+(cell-key labels show only there). `⌥⌘⇧` on its own is never taken from apps
+and never starts a chord.
 
 <p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window: one row per action with its shortcut, Record and Reset; the cell-key modifier; and how long to hold ⌥⌘ for the grid"></p>
 
@@ -160,11 +156,12 @@ finer cells. Let go of `⇧` to return to 4×4 (cell-key labels show only there)
 - **One section per display** (see [Displays and brightness](#displays-and-brightness)),
   then **Night Shift** with its Warmth slider and **Schedule…** (see
   [Night Shift](#night-shift)).
-- **The layout grid**: the display the front window is on, cut into 4×4
-  cells at its visible frame's aspect ratio, each labelled with its
-  [cell key](#cell-keys) (hold `⌥⌘⇧` for [half-cells](#half-cells)). Click a cell and the window fills
-  it; drag across cells and the selection highlights as you go, and the
-  window fills it on release (a 2×4 drag from the top-left is the left half).
+- **The layout grid**: the display the front window is on, cut into 8×8
+  [half-cells](#half-cells) at its visible frame's aspect ratio, centred in
+  the menu (unlabelled: the [cell keys](#cell-keys) name the 4×4 cells).
+  Click a cell and the window fills it; drag across cells and the selection
+  highlights as you go, and the window fills it on release (a 4×8 drag from
+  the top-left is the left half).
   Cells under the front window are shaded in the accent colour, cells under
   other windows on that display lightly. The menu closes once the window is
   told where to go.

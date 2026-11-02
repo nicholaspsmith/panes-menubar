@@ -45,9 +45,9 @@ public struct LayoutGrid: Equatable, Sendable {
         self.rows = max(1, rows)
     }
 
-    /// The fine grid, shown while ⌥⌘⇧ is held (in the menu and on the
-    /// overlay): each 4×4 cell split
-    /// into its own 2×2. Its edges fall on the 4×4 grid's edges exactly.
+    /// The fine grid: always the menu's, and the overlay's while ⌥⌘⇧ is
+    /// held. Each 4×4 cell split into its own 2×2; its edges fall on the
+    /// 4×4 grid's edges exactly.
     public static let fine = LayoutGrid(columns: 8, rows: 8)
 
     public var cells: [GridCell] {
@@ -93,5 +93,17 @@ public struct LayoutGrid: Equatable, Sendable {
 
     private func edge(_ i: Int, of n: Int, from origin: CGFloat, length: CGFloat) -> CGFloat {
         i >= n ? origin + length : origin + (length * CGFloat(i) / CGFloat(n)).rounded(.down)
+    }
+}
+
+/// Where a grid drawn at a fixed size sits in the room a view gives it (the
+/// menu's grid, in a menu wider than the grid): centred, on whole points,
+/// and never larger than the room.
+public enum GridPlacement {
+    public static func centred(_ size: CGSize, in room: CGRect) -> CGRect {
+        let w = max(0, min(size.width, room.width)), h = max(0, min(size.height, room.height))
+        return CGRect(x: (room.minX + (room.width - w) / 2).rounded(.down),
+                      y: (room.minY + (room.height - h) / 2).rounded(.down),
+                      width: w, height: h)
     }
 }
