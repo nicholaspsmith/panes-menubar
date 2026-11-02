@@ -172,7 +172,10 @@ final class DisplaysFeature: NSObject {
         shown = (CGFloat(model.mainBrightnessFraction), model.nightShift?.status().enabled ?? false)
     }
 
+    /// A frame of the icon lap, about 60 a second. Draws from `shown`, not
+    /// from the display.
     private func drawLapFrame() {
+        guard isArmonitorShown() else { return }
         onIconInputsChanged?()
     }
 
@@ -182,19 +185,28 @@ final class DisplaysFeature: NSObject {
     }
 
     /// Run the lap round Armonitor's own monitor in the icon (the minute cue).
-    /// Not while the full-screen lap is out.
+    /// Only while he is the icon, and not while the full-screen lap is out.
     func runIconLap() {
-        guard !screenLapRun.isRunning else { return }
+        guard isArmonitorShown(), !screenLapRun.isRunning else { return }
         iconLapAnimation.start()
+    }
+
+    /// Stop the icon lap where it is, for when another icon is chosen. The
+    /// tongue needs no stopping: it is only a deadline the drawing reads.
+    func cancelIconLap() {
+        iconLapAnimation.cancel()
+        iconLap = 0
     }
 
     /// Armonitor leaves the monitor and slithers counterclockwise round the
     /// whole screen and back: when the app starts, when a display it has not
     /// seen appears, and when Night Shift turns on or off (`LapTrigger`) —
     /// yes/no changes only, never a slider. A second trigger while he is out
-    /// is ignored. Not while the slot is lent out (yielded) or off screen.
+    /// is ignored. Not while the slot is lent out (yielded) or off screen, and
+    /// not under Reduce Motion.
     func screenLapIfArmonitor() {
-        guard isArmonitorShown(), !screenLapRun.isRunning, let button = status.button,
+        guard isArmonitorShown(), !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+              !screenLapRun.isRunning, let button = status.button,
               let window = button.window, let screen = window.screen else { return }
         let slot = window.convertToScreen(button.convert(button.bounds, to: nil))
         guard slot.width >= 8 else { return }

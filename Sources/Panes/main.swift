@@ -26,7 +26,7 @@ final class App: NSObject, NSApplicationDelegate {
     private lazy var snapper = EdgeSnapper(mover: mover)
     private var tap: HotkeyTap!
     /// The displays, Night Shift and the brightness keys.
-    private var displays: DisplaysFeature!
+    private var displayFeature: DisplaysFeature!
     private let chordTap = ChordTap()
     /// The grid that covers the screen while ⌥⌘ is held.
     private let overlay = GridOverlay()
@@ -48,13 +48,27 @@ final class App: NSObject, NSApplicationDelegate {
     private var slide: IconAnimation?
     /// Major Pane, when he is the icon (Icon ▸ Major Pane).
     private var mascot: MascotController?
-    private static let iconStyleKey = "IconStyle"
-    /// "major-pane" (default) or "grid".
-    private var iconStyle: String {
-        get { UserDefaults.standard.string(forKey: Self.iconStyleKey) ?? "major-pane" }
-        set { UserDefaults.standard.set(newValue, forKey: Self.iconStyleKey) }
+    /// The meter icons' shape and colour (StatusItemKit's `MeterStyle` and
+    /// `MeterColorHex` keys). `iconChoice` says whether a meter shows at all.
+    private let meterAppearance = MeterAppearance()
+    /// StatusItemKit's colour presets and Custom Colour…, which Icon ▸ borrows.
+    /// Kept: it is those items' target.
+    private var colourMenu: AppearanceMenu!
+    private static let knownMeters = Set(MeterStyle.proportional.map(\.rawValue))
+    /// Icon ▸: Screen Grid (also when nothing or something unknown is saved),
+    /// Major Pane, Armonitor or a meter. Read once at launch; each pick saves it.
+    private var iconChoice = IconChoice(stored: UserDefaults.standard.string(forKey: IconChoice.key),
+                                        knownMeters: App.knownMeters) {
+        didSet { UserDefaults.standard.set(iconChoice.stored, forKey: IconChoice.key) }
     }
-    private var mascotChosen: Bool { iconStyle == "major-pane" }
+    private var mascotChosen: Bool { iconChoice == .majorPane }
+    /// Armonitor and the meters show the main display's brightness, not windows.
+    private var showsDisplayIcon: Bool {
+        switch iconChoice {
+        case .armonitor, .meter: return true
+        case .grid, .majorPane: return false
+        }
+    }
     /// The window the open menu acts on, captured as it opens: the menu does
     /// not activate Panes, so the frontmost app is still the user's.
     private var menuTarget: AXWindow?
@@ -75,17 +89,20 @@ final class App: NSObject, NSApplicationDelegate {
         yieldClient = YieldClient(item: status)
         yieldClient.start()
         // Before anything can refresh the icon (the Menu Crane 1.3.0 lesson).
+        syncMeterStyle()
+        colourMenu = AppearanceMenu(appearance: meterAppearance, styles: []) { [weak self] in self?.drawDisplayIcon() }
         let mascot = MascotController(status: status)
         mascot.enabled = mascotChosen
         mascot.start()
         self.mascot = mascot
 
-        let displays = DisplaysFeature(status: status)
-        // Task A4 makes these follow the icon choice.
-        displays.isArmonitorShown = { false }
-        displays.onIconInputsChanged = { [weak self] in self?.refreshIcon(force: true) }
-        displays.onBrightnessBindingsChanged = { [weak self] in self?.updateTapBindings() }
-        self.displays = displays
+        let displayFeature = DisplaysFeature(status: status)
+        // The tongue, the laps and the brightness/Night Shift redraws act only
+        // for the icons that show them.
+        displayFeature.isArmonitorShown = { [weak self] in self?.iconChoice == .armonitor }
+        displayFeature.onIconInputsChanged = { [weak self] in self?.drawDisplayIcon() }
+        displayFeature.onBrightnessBindingsChanged = { [weak self] in self?.updateTapBindings() }
+        self.displayFeature = displayFeature
 
         tap = HotkeyTap(bindings: tapBindings) { [weak self] token in self?.handle(token: token) ?? false }
         model.onChange = { [weak self] _ in self?.updateTapBindings() }
@@ -112,7 +129,7 @@ final class App: NSObject, NSApplicationDelegate {
         }
         status.onMenuDidClose = { [weak self] in
             self?.menuOpen = false
-            self?.displays.refreshIcon()
+            self?.displayFeature.refreshIcon()
         }
         chordTap.onFinish = { [mover] window, selection, display in
             mover.move(window, to: LayoutGrid().frame(for: selection, in: display.visibleFrame),
@@ -138,22 +155,22 @@ final class App: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         // No XDR table or dim overlay may outlive the app.
-        displays?.stop()
+        displayFeature?.stop()
     }
 
     /// Starts the displays feature: DDC, Night Shift and its schedule, XDR and
     /// Dim. The one place it starts.
     private func startDisplays() {
-        displays.start()
+        displayFeature.start()
         // start() doesn't report its first reading; draw from it now.
-        displays.refreshIcon()
+        displayFeature.refreshIcon()
     }
 
     // MARK: - Tap lifecycle
 
     /// The one tap's bindings: the window shortcuts first (first match wins),
     /// then the brightness keys (none while they are off).
-    private var tapBindings: [Binding] { model.tapBindings + displays.brightnessBindings }
+    private var tapBindings: [Binding] { model.tapBindings + displayFeature.brightnessBindings }
 
     /// Every change to either set goes through here, so neither drops the other.
     private func updateTapBindings() {
@@ -187,7 +204,7 @@ final class App: NSObject, NSApplicationDelegate {
         refreshIcon()
         pollCount += 1
         // Every 60 s: the displays' safety net for a missed change notification.
-        if pollCount % 40 == 0 { displays.safetyPoll() }
+        if pollCount % 40 == 0 { displayFeature.safetyPoll() }
         // Every ~6 s, re-create the tap so it stays at the head of the session
         // taps (another app's tap inserted later would see our keys first).
         // The brightness keys ride on it, so this keeps them frontmost too.
@@ -241,7 +258,7 @@ final class App: NSObject, NSApplicationDelegate {
 
     /// Brightness keys go to the displays; window shortcuts to `handleWindow`.
     private func handle(token: String) -> Bool {
-        if displays.isBrightnessToken(token) { return displays.handleBrightness(token: token) }
+        if displayFeature.isBrightnessToken(token) { return displayFeature.handleBrightness(token: token) }
         return handleWindow(token: token)
     }
 
@@ -298,18 +315,31 @@ final class App: NSObject, NSApplicationDelegate {
         anim.start()
     }
 
-    /// Panes's slot in the Menumon minute cue: Major Pane salutes, or the grid's tiles slide.
+    /// Panes's slot in the Menumon minute cue: whichever icon shows does its
+    /// thing. The grid's tiles slide, Major Pane salutes, Armonitor laps his
+    /// monitor; a meter has nothing to do.
     private func minuteCueFired() {
-        if mascotChosen { mascot?.salute() } else { slideTiles() }
+        switch iconChoice {
+        case .grid: slideTiles()
+        case .majorPane: mascot?.salute()
+        case .armonitor: displayFeature.runIconLap()
+        case .meter: break
+        }
     }
 
+    /// Armonitor and the meters redraw from the displays (`drawDisplayIcon`),
+    /// not from the window poll: only a forced refresh draws them here.
     private func refreshIcon(force: Bool = false) {
         guard let status, slide?.isRunning != true else { return }
+        if showsDisplayIcon {
+            if force { drawDisplayIcon() }
+            return
+        }
         let m = iconModel()
         var sig = Hasher()
         sig.combine(WindowMap.signature(m.windows + [m.display]))
         sig.combine(m.active)
-        sig.combine(iconStyle)
+        sig.combine(iconChoice.stored)
         let s = sig.finalize()
         guard force || s != iconSignature else { return }
         iconSignature = s
@@ -318,6 +348,33 @@ final class App: NSObject, NSApplicationDelegate {
         } else {
             status.setIcon(ScreenGridIcon.image(m))
         }
+    }
+
+    /// Armonitor or the chosen meter, from the brightness and Night Shift the
+    /// displays last read. No window map and no display query, so it suits
+    /// the lap and tongue frames (about 60 a second). Nothing for the grid or
+    /// Major Pane: brightness and Night Shift don't change them.
+    private func drawDisplayIcon() {
+        guard let status, let d = displayFeature else { return }
+        let fraction = CGFloat(d.mainBrightnessFraction)
+        switch iconChoice {
+        case .armonitor:
+            status.setIcon(CharacterIcon.monitorLizard(brightness: fraction, nightShift: d.nightShiftOn,
+                                                       tongue: d.tongueActive, lizard: !d.isScreenLapRunning,
+                                                       lap: d.iconLapProgress))
+        case .meter:
+            status.setIcon(meterAppearance.image(fraction: fraction))
+        case .grid, .majorPane:
+            break
+        }
+    }
+
+    /// `MeterAppearance` draws the shape under its own `MeterStyle` key;
+    /// `IconStyle` is the one that says which meter shows. Keep the two in step.
+    private func syncMeterStyle() {
+        guard case .meter(let raw) = iconChoice, let style = MeterStyle(rawValue: raw),
+              meterAppearance.style != style else { return }
+        meterAppearance.style = style
     }
 
     // MARK: - Menu
@@ -329,7 +386,7 @@ final class App: NSObject, NSApplicationDelegate {
         menu.autoenablesItems = false
         menuTarget = trusted ? AXWindow.focused() : nil
 
-        displays.addMenuSection(to: menu)
+        displayFeature.addMenuSection(to: menu)
         menu.addItem(.separator())
 
         let gridItem = NSMenuItem()
@@ -379,21 +436,38 @@ final class App: NSObject, NSApplicationDelegate {
                 title: "Grid on Hold ⌥⌘", isOn: self.holdGridEnabled,
                 toolTip: "Hold ⌥⌘ on its own and a grid covers the screen; click or drag across cells"
             ) { [weak self] on in self?.setHoldGrid(on) })
-            for item in self.displays.settingsItems() { sub.addItem(item) }
+            for item in self.displayFeature.settingsItems() { sub.addItem(item) }
             sub.addItem(self.actionItem("Preferences…", #selector(self.openPrefs), key: ","))
         }, belowSettings: { menu in
             // Icon sits in the main menu, right below Settings.
             let icon = NSMenuItem(title: "Icon", action: nil, keyEquivalent: "")
-            let pick = NSMenu()
-            for (title, style) in [("Major Pane", "major-pane"), ("Screen Grid", "grid")] {
-                let item = self.actionItem(title, #selector(self.chooseIcon(_:)))
-                item.representedObject = style
-                item.state = self.iconStyle == style ? .on : .off
-                pick.addItem(item)
-            }
-            icon.submenu = pick
+            icon.submenu = self.makeIconMenu()
             menu.addItem(icon)
         })
+    }
+
+    /// Screen Grid, Major Pane, Armonitor; Monitor Lizard's meter shapes;
+    /// then StatusItemKit's colour presets and Custom Colour… for the meters.
+    private func makeIconMenu() -> NSMenu {
+        let pick = NSMenu()
+        let choices: [(String, IconChoice)] = [("Screen Grid", .grid), ("Major Pane", .majorPane), ("Armonitor", .armonitor)]
+        let meters = MeterStyle.proportional.map { ($0.title, IconChoice.meter($0.rawValue)) }
+        for (i, (title, choice)) in (choices + meters).enumerated() {
+            if i == choices.count { pick.addItem(.separator()) }
+            let item = actionItem(title, #selector(chooseIcon(_:)))
+            item.representedObject = choice.stored
+            item.state = iconChoice == choice ? .on : .off
+            pick.addItem(item)
+        }
+        // AppearanceMenu with no shapes builds just a separator, the presets
+        // and Custom Colour…; move them over (an item lives in one menu only).
+        if let colours = colourMenu.menuItem().submenu {
+            for item in colours.items {
+                colours.removeItem(item)
+                pick.addItem(item)
+            }
+        }
+        return pick
     }
 
     private func makeGrid() -> GridMenuView {
@@ -463,8 +537,10 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     @objc private func chooseIcon(_ sender: NSMenuItem) {
-        iconStyle = sender.representedObject as? String ?? "major-pane"
+        iconChoice = IconChoice(stored: sender.representedObject as? String, knownMeters: Self.knownMeters)
+        syncMeterStyle()
         slide?.cancel(); slide = nil
+        if iconChoice != .armonitor { displayFeature.cancelIconLap() }
         mascot?.enabled = mascotChosen
         refreshIcon(force: true)        // draws the chosen icon from how things are now
     }
