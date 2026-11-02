@@ -62,20 +62,25 @@ class GridView: NSView {
     let style: Style
     private let onSelect: (LayoutGrid, GridSelection) -> Void
     private(set) var grid = LayoutGrid()
+    /// The grid's own size, centred in the view (nil: it fills the view
+    /// inside the insets).
+    private let gridSize: CGSize?
     private var activeCells: Set<GridCell> = []
     private var otherCells: Set<GridCell> = []
     private var anchor: GridCell?
     private var selection: GridSelection?
     private var hover: GridCell?
 
-    init(frame: NSRect, model: Model, style: Style, onSelect: @escaping (LayoutGrid, GridSelection) -> Void) {
+    init(frame: NSRect, model: Model, style: Style, grid: LayoutGrid = LayoutGrid(), gridSize: CGSize? = nil,
+         onSelect: @escaping (LayoutGrid, GridSelection) -> Void) {
         self.model = model
         self.style = style
+        self.gridSize = gridSize
         self.onSelect = onSelect
         super.init(frame: frame)
         setAccessibilityRole(.group)
         setAccessibilityLabel("Window layout grid")
-        setGrid(LayoutGrid())
+        setGrid(grid)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -110,9 +115,12 @@ class GridView: NSView {
 
     // MARK: Geometry
 
+    /// Where the cells are drawn and hit-tested: the view inside the insets,
+    /// or the grid's own size centred there.
     private var gridRect: NSRect {
         let i = style.insets
-        return NSRect(x: i.left, y: i.top, width: bounds.width - i.left - i.right, height: bounds.height - i.top - i.bottom)
+        let room = NSRect(x: i.left, y: i.top, width: bounds.width - i.left - i.right, height: bounds.height - i.top - i.bottom)
+        return gridSize.map { GridPlacement.centred($0, in: room) } ?? room
     }
 
     private func rect(for cell: GridCell) -> NSRect {
@@ -225,12 +233,8 @@ class GridView: NSView {
         let g = grid
         anchor = nil
         self.selection = nil
-        willSelect()
         onSelect(g, selection)
     }
-
-    /// Hook for subclasses, just before `onSelect`.
-    func willSelect() {}
 
     /// A menu runs its own event loop; ask for the pixels now.
     func redraw() {
@@ -240,13 +244,11 @@ class GridView: NSView {
 }
 
 /// The grid at the top of the menu, shaped like the target display's visible
-/// frame. Holding ⌥⌘⇧ while the menu is open splits it into half-cells, as
-/// on the overlay; the menu closes once a cell is picked.
+/// frame: always the 8×8 half-cell grid (holding keys does not change it),
+/// drawn at a fixed size and centred however wide the menu is. The menu
+/// closes once a cell is picked.
 final class GridMenuView: GridView {
     static let width: CGFloat = 248
-    /// Holding these shows the fine grid.
-    static let fineModifiers: NSEvent.ModifierFlags = [.command, .option, .shift]
-    private var modifierTimer: Timer?
 
     init(model: Model, onSelect: @escaping (LayoutGrid, GridSelection) -> Void) {
         let i = Style.menu.insets
@@ -254,33 +256,14 @@ final class GridMenuView: GridView {
         let aspect = model.visible.height > 0 ? model.visible.width / model.visible.height : 1.6
         let gridH = min(max((gridW / aspect).rounded(), 80), 200)
         super.init(frame: NSRect(x: 0, y: 0, width: Self.width, height: gridH + i.top + i.bottom),
-                   model: model, style: .menu, onSelect: onSelect)
+                   model: model, style: .menu, grid: .fine, gridSize: CGSize(width: gridW, height: gridH),
+                   onSelect: onSelect)
+        // The menu widens its item views to its own width; the grid stays
+        // its size, centred in the wider view.
+        autoresizingMask = [.width]
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
-
-    // A menu tracks in its own run-loop mode and does not reliably deliver
-    // flagsChanged to local monitors, so the modifiers are polled (in common
-    // modes) for as long as the grid is on screen.
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        modifierTimer?.invalidate()
-        modifierTimer = nil
-        guard window != nil else { return }
-        let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in self?.checkModifiers() }
-        RunLoop.main.add(t, forMode: .common)
-        modifierTimer = t
-        checkModifiers()
-    }
-
-    private func checkModifiers() {
-        let held = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        setFine(held.isSuperset(of: Self.fineModifiers))
-    }
-
-    override func willSelect() {
-        modifierTimer?.invalidate()
-    }
 
     override func mouseUp(with event: NSEvent) {
         super.mouseUp(with: event)

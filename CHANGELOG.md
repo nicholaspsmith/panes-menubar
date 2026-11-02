@@ -8,6 +8,13 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.0.1] - 2026-11-01
+
+### Changed
+
+- The grid in the menu is centred.
+- The grid in the menu always shows the finer 8×8 grid, and no longer changes when you hold ⌥⌘⇧.
+
 ## [1.0.0] - 2026-11-01
 
 ### Added

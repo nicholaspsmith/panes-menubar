@@ -128,4 +128,28 @@ final class GridTests: XCTestCase {
         XCTAssertEqual(LayoutGrid.fine.cells(coveredBy: w, in: v).count, 3)
         XCTAssertEqual(grid.cells(coveredBy: w, in: v), [], "under half of any 4×4 cell")
     }
+
+    // MARK: Placement (the menu's grid, centred in a menu wider than it)
+
+    func testPlacementCentresAFixedSizeInWiderRoom() {
+        let room = CGRect(x: 16, y: 6, width: 300, height: 135)
+        XCTAssertEqual(GridPlacement.centred(CGSize(width: 216, height: 135), in: room),
+                       CGRect(x: 58, y: 6, width: 216, height: 135))
+    }
+
+    func testPlacementFillsRoomOfExactlyItsSize() {
+        let room = CGRect(x: 16, y: 6, width: 216, height: 135)
+        XCTAssertEqual(GridPlacement.centred(room.size, in: room), room)
+    }
+
+    func testPlacementSitsOnWholePoints() {
+        // 301 − 216 = 85 spare: 42 to the left, 43 to the right.
+        let r = GridPlacement.centred(CGSize(width: 216, height: 135), in: CGRect(x: 16, y: 6, width: 301, height: 135))
+        XCTAssertEqual(r, CGRect(x: 58, y: 6, width: 216, height: 135))
+    }
+
+    func testPlacementNeverOutgrowsTheRoom() {
+        let room = CGRect(x: 16, y: 6, width: 200, height: 100)
+        XCTAssertEqual(GridPlacement.centred(CGSize(width: 216, height: 135), in: room), room)
+    }
 }
