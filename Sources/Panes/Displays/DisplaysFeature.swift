@@ -7,6 +7,7 @@
 import AppKit
 import DisplayCore
 import StatusItemKit
+import UserNotifications
 
 /// Monitor Lizard's app layer inside Panes: external-display control (DDC
 /// brightness and contrast, DisplayServices brightness where macOS drives the
@@ -20,7 +21,6 @@ import StatusItemKit
 final class DisplaysFeature: NSObject {
     private let status: StatusItemController
     private let notifier = Notifier()
-    private var notifierAuthorized = false
     let model: DisplayModel
     private var tongueUntil = Date.distantPast
     /// The big lap round the whole screen, played at launch, when a new
@@ -331,13 +331,24 @@ final class DisplaysFeature: NSObject {
 
     // MARK: - TV-role fix
 
+    /// Posts after the permission is known. The first call asks (nothing is
+    /// asked at launch) and posts from the answer; posting before it arrives
+    /// would be rejected.
     private func notify(title: String, body: String) {
-        // Asked for on the first notification, not at launch.
-        if !notifierAuthorized {
-            notifierAuthorized = true
-            notifier.requestAuthorization()
+        let center = UNUserNotificationCenter.current()
+        let post = { [notifier] in notifier.post(title: title, body: body) }
+        center.getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional:
+                DispatchQueue.main.async(execute: post)
+            case .notDetermined:
+                center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+                    if granted { DispatchQueue.main.async(execute: post) }
+                }
+            default:
+                break
+            }
         }
-        notifier.post(title: title, body: body)
     }
 
     func fixTVRole(_ info: DisplayInfo) {
