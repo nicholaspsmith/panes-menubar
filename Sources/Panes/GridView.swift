@@ -250,8 +250,8 @@ class GridView: NSView {
 
 /// The grid in the menu: always the 8×8 half-cell grid (holding keys does
 /// not change it), as wide as the menu's separator lines above and below it
-/// however wide the menu is, and as tall as a 216 pt grid shaped like the
-/// target display's visible frame. The cells stretch with the width, so the
+/// however wide the menu is, and 1.4 times as tall as a 216 pt grid shaped
+/// like the target display's visible frame. The cells stretch with the width, so the
 /// aspect ratio is only roughly the display's. The menu closes once a cell is
 /// picked.
 final class GridMenuView: GridView {
@@ -266,14 +266,17 @@ final class GridMenuView: GridView {
     /// width from x = 0.
     static let separatorInsets = (left: CGFloat(30), right: CGFloat(16))
 
-    /// The grid's height: what a 216 pt wide grid shaped like the display
-    /// would be (the height the menu has always had), kept between 80 and 200.
+    /// The grid's height: 1.4 times what a 216 pt wide grid shaped like the
+    /// display would be (40% taller than up to 1.5.0), kept between 112 and
+    /// 280 (1.4 times the old 80 and 200).
     static let heightBasis: CGFloat = 216
+    static let heightScale: CGFloat = 1.4
 
     init(model: Model, onSelect: @escaping (LayoutGrid, GridSelection) -> Void) {
         let i = Style.menu.insets
         let aspect = model.visible.height > 0 ? model.visible.width / model.visible.height : 1.6
-        let gridH = min(max((Self.heightBasis / aspect).rounded(), 80), 200)
+        let gridH = min(max((Self.heightBasis / aspect * Self.heightScale).rounded(), 80 * Self.heightScale),
+                       200 * Self.heightScale)
         super.init(frame: NSRect(x: 0, y: 0, width: Self.width, height: gridH + i.top + i.bottom),
                    model: model, style: .menu, grid: .fine, onSelect: onSelect)
         // The menu widens its item views to its own width; the grid

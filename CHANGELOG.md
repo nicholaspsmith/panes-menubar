@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.6.0] - 2026-11-02
+
+- The layout grid in the menu is 40% taller, so its cells are easier to hit.
+
 ## [1.5.0] - 2026-11-02
 
 - Panes now appears in the menu bar one second faster.
