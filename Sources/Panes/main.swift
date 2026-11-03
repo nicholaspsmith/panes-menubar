@@ -44,20 +44,20 @@ final class App: NSObject, NSApplicationDelegate {
         get { UserDefaults.standard.object(forKey: Self.holdGridKey) as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: Self.holdGridKey) }
     }
-    private var settingsWindow: SettingsWindowController?
+    private var preferences: PreferencesPane?
     private var trustTimer: Timer?
     private var pollCount = 0
     private var iconSignature: Int?
     /// Panes's turn in the minute cue: the windows slide into their tiles.
     private var minuteCue: MinuteCue!
     private var slide: IconAnimation?
-    /// Major Pane, when he is the icon (Settings ▸ Icon ▸ Major Pane).
+    /// Major Pane, when he is the icon (Preferences… ▸ Menu Bar Icon ▸ Major Pane).
     private var mascot: MascotController?
     /// The meter icons' shape and colour (StatusItemKit's `MeterStyle` and
     /// `MeterColorHex` keys). `iconChoice` says whether a meter shows at all.
     private let meterAppearance = MeterAppearance()
     private static let knownMeters = Set(IconChoice.meters)
-    /// The Settings window's Icon: Screen Grid (also when nothing or something unknown is saved),
+    /// The Preferences window's Menu Bar Icon: Screen Grid (also when nothing or something unknown is saved),
     /// Major Pane, Armonitor or a meter. Read once at launch; each pick saves it.
     private var iconChoice = IconChoice(stored: UserDefaults.standard.string(forKey: IconChoice.key),
                                         knownMeters: App.knownMeters) {
@@ -409,16 +409,14 @@ final class App: NSObject, NSApplicationDelegate {
         // The actions fold under one Shortcuts row, folded each time the
         // menu opens.
         shortcutItems = makeShortcutItems()
-        MenuSection.add(title: "Shortcuts", items: shortcutItems, to: menu)
+        FoldingSection.add(title: "Shortcuts", items: shortcutItems, to: menu)
 
         if !trusted {
             menu.addItem(.separator())
             menu.addItem(actionItem("⚠ Grant Accessibility…", #selector(grantTrust)))
         } else if menuTarget == nil {
             menu.addItem(.separator())
-            let none = NSMenuItem(title: "No window to arrange", action: nil, keyEquivalent: "")
-            none.isEnabled = false
-            menu.addItem(none)
+            menu.addItem(InfoMenuItem.make("No window to arrange"))
         }
         if edgeSnapping, SystemTiling.isEdgeTilingOn(edge: Self.windowManagerDefault(SystemTiling.edgeKey),
                                                      top: Self.windowManagerDefault(SystemTiling.topKey)) {
@@ -429,15 +427,12 @@ final class App: NSObject, NSApplicationDelegate {
             menu.addItem(warn)
         }
 
-        // The foot: Settings… (the window that holds every setting, as in Mac
-        // Daddy), then Quit.
+        // The foot every Menumon app shares: Preferences… (the window that
+        // holds every setting, as in Mac Daddy), then Quit Panes.
         menu.addItem(.separator())
-        menu.addItem(actionItem("Settings…", #selector(openSettings), key: ","))
-        let quit = NSMenuItem(title: "Quit Panes", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        quit.target = NSApp
-        menu.addItem(quit)
+        PreferencesMenu.addFooter(to: menu, appName: "Panes") { [weak self] in self?.openPreferences() }
         // Every item but Quit and the "…" ones keeps the menu open.
-        KeepOpen.apply(to: menu.items)
+        KeepOpenMenu.apply(to: menu.items)
     }
 
     /// After a kept-open item or a grid cell moved the window: shade where it
@@ -448,7 +443,7 @@ final class App: NSObject, NSApplicationDelegate {
         for item in shortcutItems {
             guard let raw = item.representedObject as? String, let action = WindowAction(rawValue: raw) else { continue }
             item.isEnabled = mover.canPerform(action, on: target)
-            (item.view as? MenuRowView)?.updateColors()
+            (item.view as? MenuItemRow)?.updateColors()
             item.view?.needsDisplay = true
         }
     }
@@ -551,7 +546,7 @@ final class App: NSObject, NSApplicationDelegate {
         refreshIcon(force: true)        // draws the chosen icon from how things are now
     }
 
-    /// What `choice` would put in the menu bar, for the Settings window's icon
+    /// What `choice` would put in the menu bar, for the Preferences window's icon
     /// tiles: the same drawing, the grid and Major Pane from the live window
     /// map. The brightness icons are drawn at 65% rather than the live level,
     /// so the meters show a reading rather than a full ring.
@@ -576,9 +571,9 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc private func openSettings() {
-        if settingsWindow == nil {
-            let settings = SettingsModel(bindings: model, hooks: .init(
+    private func openPreferences() {
+        if preferences == nil {
+            let prefs = PreferencesModel(bindings: model, hooks: .init(
                 read: { [weak self] in
                     guard let self else { return .init() }
                     return .init(edgeSnapping: self.edgeSnapping, holdGrid: self.holdGridEnabled,
@@ -594,9 +589,9 @@ final class App: NSObject, NSApplicationDelegate {
                     self?.drawDisplayIcon()
                 },
                 preview: { [weak self] in self?.iconPreview($0) ?? NSImage() }))
-            settingsWindow = SettingsWindowController(model: settings)
+            preferences = prefs.makePane()
         }
-        settingsWindow?.show()
+        preferences?.show()
     }
 }
 

@@ -6,6 +6,7 @@
 
 import AppKit
 import DisplayCore
+import StatusItemKit
 
 /// A stepped slider over the HiDPI "looks like" sizes. Snaps to a stop while
 /// dragging and applies only on release — a mode switch blanks the display for
@@ -120,14 +121,16 @@ final class ModeBox: NSObject {
     init(_ mode: ModeSpec) { self.mode = mode }
 }
 
-/// The picker submenu: every same-aspect mode, HiDPI first, the current one checked.
+/// The picker submenu: every same-aspect mode, HiDPI first, the current one
+/// checked. The modes are one pick-one set (`KeepOpenMenu.pickOne`): picking
+/// one moves the tick to it while the menu stays open.
 enum ResolutionMenu {
     static func make(plan: ModePlan, displayID: CGDirectDisplayID, target: AnyObject, action: Selector) -> NSMenu {
         let menu = NSMenu()
+        var modeItems: [NSMenuItem] = []
         func section(_ title: String, _ modes: [ModeSpec]) {
             guard !modes.isEmpty else { return }
-            let header = NSMenuItem(title: title, action: nil, keyEquivalent: ""); header.isEnabled = false
-            menu.addItem(header)
+            menu.addItem(InfoMenuItem.make(title))
             for mode in modes {
                 var text = mode.label
                 if let native = plan.native, mode.width == native.width, mode.height == native.height, !mode.isHiDPI {
@@ -141,11 +144,13 @@ enum ResolutionMenu {
                     item.state = .on
                 }
                 menu.addItem(item)
+                modeItems.append(item)
             }
         }
         section("HiDPI", plan.hiDPI)
         if !plan.hiDPI.isEmpty && !plan.lowRes.isEmpty { menu.addItem(.separator()) }
         section("Low resolution", plan.lowRes)
+        KeepOpenMenu.pickOne(modeItems)
         return menu
     }
 }

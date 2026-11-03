@@ -335,27 +335,24 @@ final class DisplaysFeature: NSObject {
                 items.append(item)
                 if let line = scheduleLine(scheduler) { items.append(disabledItem(line)) }
             }
-            MenuSection.add(title: "Night Shift", key: "nightShift", items: items, to: menu)
+            FoldingSection.add(title: "Night Shift", key: "nightShift", items: items, to: menu)
         } else {
             menu.addItem(disabledItem("Night Shift unavailable on this macOS"))
         }
     }
 
     /// Whether the keyboard's brightness keys step the main monitor over DDC
-    /// (the Settings window's Brightness Keys).
+    /// (the Preferences window's Brightness Keys).
     var brightnessKeysEnabled: Bool {
         get { brightnessKeys.isEnabled }
         set { brightnessKeys.isEnabled = newValue }
     }
 
     /// A line of information: greyed and not selectable, like a native
-    /// section header. (The menu doesn't autoenable, so an item without an
-    /// action would otherwise highlight and do nothing.)
-    func disabledItem(_ title: String) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        item.isEnabled = false
-        return item
-    }
+    /// section header (StatusItemKit's `InfoMenuItem`). The menu doesn't
+    /// autoenable, so an item without an action would otherwise highlight
+    /// and do nothing.
+    func disabledItem(_ title: String) -> NSMenuItem { InfoMenuItem.make(title) }
 
     func actionItem(_ title: String, _ selector: Selector, key: String = "") -> NSMenuItem {
         let item = NSMenuItem(title: title, action: selector, keyEquivalent: key)

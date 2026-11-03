@@ -4,7 +4,7 @@
 //
 // Copyright (c) 2026 Nicholas Smith
 
-/// Which icon Panes shows in the menu bar (Settings ▸ Icon), as stored under `key`.
+/// Which icon Panes shows in the menu bar (Preferences… ▸ Menu Bar Icon), as stored under `key`.
 ///
 /// Nothing stored, or anything this build doesn't know (an empty string, a
 /// meter shape it doesn't draw, a typo), is the Screen Grid: an unreadable

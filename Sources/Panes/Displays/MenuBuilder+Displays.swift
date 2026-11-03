@@ -19,9 +19,9 @@ extension DisplaysFeature {
         let items = rows.items
         rows.removeAllItems()
         let info = entry.info
-        MenuSection.add(title: info.name, tag: info.isHDMI ? "HDMI" : nil,
-                        key: "display.\(info.vendorID).\(info.productID).\(info.serial)",
-                        items: items, to: menu)
+        FoldingSection.add(title: info.name, tag: info.isHDMI ? "HDMI" : nil,
+                           key: "display.\(info.vendorID).\(info.productID).\(info.serial)",
+                           items: items, to: menu)
     }
 
     /// The display's controls: brightness (and contrast), resolution, and
@@ -71,8 +71,7 @@ extension DisplaysFeature {
             sliderRows[entry.info.id, default: [:]][.contrast] = contrastView
             menu.addItem(c)
         } else if entry.brightnessSource == .none {
-            let none = NSMenuItem(title: "No DDC control", action: nil, keyEquivalent: "")
-            none.isEnabled = false
+            let none = InfoMenuItem.make("No DDC control")
             none.indentationLevel = 1
             menu.addItem(none)
         }
@@ -90,11 +89,9 @@ extension DisplaysFeature {
         let ns: NSMenuItem
         switch entry.tvState {
         case .ok:
-            ns = NSMenuItem(title: "✓ Night Shift works on this display", action: nil, keyEquivalent: "")
-            ns.isEnabled = false
+            ns = InfoMenuItem.make("✓ Night Shift works on this display")
         case .fixedPendingReconnect:
-            ns = NSMenuItem(title: "⏳ Marked as a monitor — reconnect to enable Night Shift", action: nil, keyEquivalent: "")
-            ns.isEnabled = false
+            ns = InfoMenuItem.make("⏳ Marked as a monitor — reconnect to enable Night Shift")
         case .blocked, .skipped:
             ns = NSMenuItem(title: "✗ TV mode · Night Shift blocked · Retry", action: #selector(retryTVFix(_:)), keyEquivalent: "")
             ns.target = self
@@ -129,18 +126,15 @@ extension DisplaysFeature {
         guard xdr.isSupported(id) else { return }
         let toggle: NSMenuItem
         if !XDRPolicy.available {
-            toggle = NSMenuItem(title: "XDR Brightness · unavailable", action: nil, keyEquivalent: "")
-            toggle.isEnabled = false
+            toggle = InfoMenuItem.make("XDR Brightness · unavailable")
             toggle.toolTip = "XDR Brightness is switched off in this build."
             menu.addItem(toggle)
             return
         } else if xdr.isBlockedByBattery {
-            toggle = NSMenuItem(title: "XDR Brightness · off on battery", action: nil, keyEquivalent: "")
-            toggle.isEnabled = false
+            toggle = InfoMenuItem.make("XDR Brightness · off on battery")
         } else if !xdr.canHaveHeadroom(id) && !xdr.isEnabled {
             // No headroom to be had on this preset; the hint below says why.
-            toggle = NSMenuItem(title: "XDR Brightness", action: nil, keyEquivalent: "")
-            toggle.isEnabled = false
+            toggle = InfoMenuItem.make("XDR Brightness")
         } else {
             // Keeps the menu open; the Brightness slider above re-maps at once.
             toggle = ToggleMenuItem.make(title: "XDR Brightness", isOn: xdr.isEnabled) { [weak self] on in
@@ -151,8 +145,7 @@ extension DisplaysFeature {
         ToggleMenuItem.view(of: toggle)?.toolTip = toggle.toolTip
         menu.addItem(toggle)
         if let hint = xdr.presetHint(id) {
-            let row = NSMenuItem(title: hint, action: nil, keyEquivalent: "")
-            row.isEnabled = false
+            let row = InfoMenuItem.make(hint)
             row.toolTip = "XDR Brightness needs headroom above SDR white, which only the XDR preset gives (System Settings ▸ Displays ▸ Preset)."
             menu.addItem(row)
         }
