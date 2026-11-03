@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.12.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.12.2** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Preferences… and Quit Panes"></p>
 
