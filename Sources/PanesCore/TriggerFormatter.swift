@@ -13,8 +13,7 @@ public enum TriggerFormatter {
     public static func string(_ trigger: Trigger) -> String {
         switch trigger {
         case let .key(code, mods):
-            let shown = KeyCode.impliedFn.contains(code) ? mods.subtracting(.fn) : mods
-            return modifierString(shown) + keyName(code)
+            return modifierString(mods) + keyName(code)
         case let .mediaKey(code, mods):
             return modifierString(mods) + "Media(\(code))"
         }

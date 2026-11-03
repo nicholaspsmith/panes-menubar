@@ -33,7 +33,6 @@ final class App: NSObject, NSApplicationDelegate {
     private var shortcutItems: [NSMenuItem] = []
     /// The Monitor Lizard cut-over, while it runs (launch only).
     private var cutover: MonitorLizardCutover?
-    private let modifierTap = ModifierTap()
     /// The grid that covers the screen while ⌥⌘ is held.
     private let overlay = GridOverlay()
     private var holdGrid = HoldGrid()
@@ -112,8 +111,10 @@ final class App: NSObject, NSApplicationDelegate {
             self?.refreshIcon(force: true)
             if self?.mascotChosen == true { self?.mascot?.bark() }
         }
-        modifierTap.onModifiers = { [weak self] held in self?.holdModifiers(held) }
-        modifierTap.onAnyKeyDown = { [weak self] in self?.holdKeyDown() }
+        // The grid on hold ⌥⌘ watches the same tap: every modifier change and
+        // every key press, before (and whether or not) a shortcut takes it.
+        tap.onModifiersChanged = { [weak self] held in self?.holdModifiers(held) }
+        tap.onKeyDown = { [weak self] _ in self?.holdKeyDown() }
         overlay.onPick = { [weak self] window, frame, visible in
             guard let self else { return }
             self.apply(self.holdGrid.dismissed())
@@ -184,7 +185,7 @@ final class App: NSObject, NSApplicationDelegate {
 
     /// The one tap's bindings: the window shortcuts first (first match wins),
     /// then the brightness keys (none while they are off).
-    private var tapBindings: [Binding] { model.tapBindings + displayFeature.brightnessBindings }
+    private var tapBindings: [Binding] { model.bindings + displayFeature.brightnessBindings }
 
     /// Every change to either set goes through here, so neither drops the other.
     private func updateTapBindings() {
@@ -199,7 +200,6 @@ final class App: NSObject, NSApplicationDelegate {
             return
         }
         if !tap.isRunning { tap.start() }
-        if !modifierTap.isRunning { modifierTap.start() }
         if edgeSnapping { snapper.start() }
         trustTimer?.invalidate()
         trustTimer = nil
@@ -225,8 +225,6 @@ final class App: NSObject, NSApplicationDelegate {
         if pollCount % 4 == 0, let tap, tap.isTrusted, tap.isRunning {
             tap.stop()
             tap.start()
-            modifierTap.stop()
-            modifierTap.start()
         }
     }
 

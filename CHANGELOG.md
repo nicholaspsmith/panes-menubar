@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.11.1] - 2026-11-02
+
+### Changed
+
+- Panes watches the keyboard through one event tap instead of two: the grid on hold ⌥⌘ now listens on the same tap as the shortcuts. Shortcuts and the grid behave as before. Needs HotkeyKit 1.1.0.
+
 ## [1.11.0] - 2026-11-02
 
 ### Removed

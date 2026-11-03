@@ -51,6 +51,7 @@ public struct HoldGrid: Equatable, Sendable {
 
     /// The held modifiers changed (a flagsChanged event).
     public mutating func modifiers(_ held: Modifiers, at now: TimeInterval, mouseDown: Bool = false) -> Effect {
+        // fn (or Globe) held with ⌥⌘ is still ⌥⌘: it is no part of the grid's chord.
         let mods = held.subtracting(.fn)
         guard mods.isSuperset(of: Self.base) else {
             let wasShown = phase.isShown

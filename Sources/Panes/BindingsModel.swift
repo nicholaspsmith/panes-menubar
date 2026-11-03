@@ -26,8 +26,6 @@ final class BindingsModel: ObservableObject {
     }
     private static let holdDelayKey = "holdGridDelay"
 
-    var tapBindings: [Binding] { BindingStore.tapBindings(bindings) }
-
     private var overrides: [String: Trigger]
     private static let defaultsKey = "bindingOverrides"
 
@@ -43,7 +41,7 @@ final class BindingsModel: ObservableObject {
     }
 
     func setOverride(_ action: WindowAction, trigger: Trigger) {
-        overrides[action.rawValue] = BindingStore.normalized(trigger)
+        overrides[action.rawValue] = trigger
         changed()
     }
 
@@ -68,7 +66,7 @@ final class BindingsModel: ObservableObject {
             UserDefaults.standard.set(data, forKey: Self.defaultsKey)
         }
         bindings = BindingStore.resolve(overrides: overrides)
-        onChange?(tapBindings)
+        onChange?(bindings)
     }
 
     private static func load() -> [String: Trigger] {
