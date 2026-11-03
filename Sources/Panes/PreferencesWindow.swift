@@ -41,10 +41,12 @@ final class RecorderModel: ObservableObject {
     }
 }
 
-/// Every Panes setting, behind the menu's Settings… (⌘,), as in Mac Daddy:
-/// what the Settings and Icon submenus held, and the window shortcuts.
+/// Every Panes setting, behind the menu's Preferences… (⌘,), as in Mac Daddy:
+/// what the old Settings and Icon submenus held, and the window shortcuts.
 /// The values live with the app (`App`); `hooks` read and change them.
-final class SettingsModel: ObservableObject {
+/// Start at Login is StatusItemKit's `StartAtLoginToggle`, which reads and
+/// sets the login item itself.
+final class PreferencesModel: ObservableObject {
     struct Snapshot {
         var edgeSnapping = true
         var holdGrid = true
@@ -65,7 +67,6 @@ final class SettingsModel: ObservableObject {
         var preview: (IconChoice) -> NSImage
     }
 
-    @Published private(set) var loginEnabled = LoginItem.isEnabled
     @Published private(set) var current = Snapshot()
     let bindings: BindingsModel
     let recorder: RecorderModel
@@ -80,15 +81,9 @@ final class SettingsModel: ObservableObject {
 
     /// Re-read everything: the window is shown again, or a value changed.
     func refresh() {
-        loginEnabled = LoginItem.isEnabled
         var snapshot = hooks.read()
         for icon in Self.icons { snapshot.previews[icon.choice] = hooks.preview(icon.choice) }
         current = snapshot
-    }
-
-    func setLogin(_ on: Bool) {
-        LoginItem.set(on)
-        loginEnabled = LoginItem.isEnabled
     }
 
     func setEdgeSnapping(_ on: Bool) { hooks.setEdgeSnapping(on); refresh() }
@@ -97,7 +92,7 @@ final class SettingsModel: ObservableObject {
     func setIcon(_ choice: IconChoice) { hooks.setIcon(choice); refresh() }
     func setColor(_ color: NSColor) { hooks.setColor(color); refresh() }
 
-    /// The icons in the order the Icon submenu listed them.
+    /// The icons in the order the old Icon submenu listed them.
     static let icons: [(title: String, choice: IconChoice)] =
         [("Screen Grid", .grid), ("Major Pane", .majorPane), ("Armonitor", .armonitor)]
         + IconChoice.meters.compactMap(MeterStyle.init(rawValue:)).map { ($0.title, IconChoice.meter($0.rawValue)) }
@@ -105,14 +100,16 @@ final class SettingsModel: ObservableObject {
     var isMeter: Bool { if case .meter = current.icon { return true } else { return false } }
 }
 
-struct SettingsView: View {
-    @ObservedObject var model: SettingsModel
+/// The window's content: General and Shortcuts tabs. StatusItemKit's
+/// `PreferencesPane` holds it ("Panes Preferences", Esc and ⌘W close it).
+struct PreferencesView: View {
+    @ObservedObject var model: PreferencesModel
 
     var body: some View {
         TabView {
-            GeneralSettingsView(model: model)
+            GeneralPreferencesView(model: model)
                 .tabItem { Text("General") }
-            ShortcutsSettingsView(model: model.bindings, recorder: model.recorder)
+            ShortcutsPreferencesView(model: model.bindings, recorder: model.recorder)
                 .tabItem { Text("Shortcuts") }
         }
         .padding(12)
@@ -120,11 +117,11 @@ struct SettingsView: View {
     }
 }
 
-struct GeneralSettingsView: View {
-    @ObservedObject var model: SettingsModel
+struct GeneralPreferencesView: View {
+    @ObservedObject var model: PreferencesModel
     @ObservedObject private var bindings: BindingsModel
 
-    init(model: SettingsModel) {
+    init(model: PreferencesModel) {
         self.model = model
         bindings = model.bindings
     }
@@ -132,7 +129,7 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section("General") {
-                Toggle("Start at Login", isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
+                StartAtLoginToggle()
                 Toggle(isOn: Binding(get: { model.current.edgeSnapping }, set: { model.setEdgeSnapping($0) })) {
                     Text("Edge Snapping")
                     Text("Drag a window to a display edge or corner to snap it there.")
@@ -164,15 +161,10 @@ struct GeneralSettingsView: View {
             } header: {
                 Text("Grid on Hold ⌥⌘")
             } footer: {
-                Text("Hold ⌥⌘ on its own and a grid covers the screen: click a cell or drag across cells. Add ⇧ for half-cells.")
-                    .font(.callout).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                PreferencesNote("Hold ⌥⌘ on its own and a grid covers the screen: click a cell or drag across cells. Add ⇧ for half-cells.")
             }
-            Section {
-                Text("Version \(AppVersion.string)").font(.callout).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
+            // A tabbed window puts the version at the foot of its General tab.
+            PreferencesVersionSection()
         }
         .formStyle(.grouped)
     }
@@ -199,12 +191,16 @@ struct GeneralSettingsView: View {
 
 /// The icons side by side, each drawn as it would be in the menu bar now,
 /// its name under it; the chosen one is outlined in the accent colour.
+/// Not StatusItemKit's `IconTilePicker`: that one draws each image at its own
+/// size on a dark tile, where these scale the bar drawing up to fill the tile
+/// (Major Pane's pixel art stays crisp, `.interpolation(.none)`) and share the
+/// row's width on a light or dark fill that follows the window.
 struct IconTiles: View {
-    @ObservedObject var model: SettingsModel
+    @ObservedObject var model: PreferencesModel
 
     var body: some View {
         HStack(spacing: 8) {
-            ForEach(SettingsModel.icons, id: \.choice) { icon in
+            ForEach(PreferencesModel.icons, id: \.choice) { icon in
                 let chosen = model.current.icon == icon.choice
                 Button { model.setIcon(icon.choice) } label: {
                     VStack(spacing: 6) {
@@ -240,7 +236,7 @@ struct IconTiles: View {
     }
 }
 
-struct ShortcutsSettingsView: View {
+struct ShortcutsPreferencesView: View {
     @ObservedObject var model: BindingsModel
     @ObservedObject var recorder: RecorderModel
 
@@ -294,32 +290,13 @@ struct ShortcutsSettingsView: View {
     }
 }
 
-final class SettingsWindowController: NSObject, NSWindowDelegate {
-    private var window: NSWindow?
-    let model: SettingsModel
-
-    init(model: SettingsModel) { self.model = model }
-
-    func show() {
-        model.refresh()
-        if window == nil {
-            let host = NSHostingController(rootView: SettingsView(model: model))
-            // NSWindow(contentViewController:) doesn't size itself to a hosted
-            // SwiftUI view on its own (the Mac Daddy lesson).
-            host.sizingOptions = [.preferredContentSize]
-            let win = NSWindow(contentViewController: host)
-            win.title = "Panes Settings"
-            win.styleMask = [.titled, .closable]
-            win.isReleasedWhenClosed = false
-            win.delegate = self
-            window = win
-            win.center()
-        }
-        NSApp.activate(ignoringOtherApps: true)
-        window?.makeKeyAndOrderFront(nil)
+extension PreferencesModel {
+    /// The window, from StatusItemKit's `PreferencesPane`: re-read the values
+    /// each time it is shown, stop recording a shortcut when it closes.
+    func makePane() -> PreferencesPane {
+        let pane = PreferencesPane(appName: "Panes") { [self] in PreferencesView(model: self) }
+        pane.onShow = { [weak self] in self?.refresh() }
+        pane.onClose = { [weak self] in self?.recorder.cancel() }
+        return pane
     }
-
-    func windowWillClose(_ notification: Notification) { model.recorder.cancel() }
-
-    var windowNumber: Int? { window?.windowNumber }
 }

@@ -42,8 +42,8 @@ final class BrightnessKeyController {
     /// so the tap's owner can hand the tap its new binding set.
     var onBindingsChanged: (() -> Void)?
 
-    /// Read through to UserDefaults rather than once at init: the Settings
-    /// menu can make this controller before the Monitor Lizard migration has
+    /// Read through to UserDefaults rather than once at init: the menu
+    /// can make this controller before the Monitor Lizard migration has
     /// copied the key in. On by default: an absent key reads as enabled.
     var isEnabled: Bool {
         get { UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true }

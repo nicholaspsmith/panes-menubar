@@ -8,6 +8,14 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.12.0] - 2026-11-03
+
+### Changed
+
+- The menu's **Settings…** is now **Preferences…** (⌘,), and its window is **Panes Preferences**, as in Mac Daddy and the other Menumon apps. Same General and Shortcuts tabs; Esc or ⌘W now closes it.
+- Every line you cannot click (status lines, the resolution submenu's HiDPI and Low resolution headings) stays greyed, including lines that appear when a section unfolds.
+- The menu's rows and the Preferences window now come from StatusItemKit, shared with the other Menumon apps. Needs StatusItemKit 0.38.0.
+
 ## [1.11.2] - 2026-11-02
 
 - The Apollo Monitor icon now displays the current level in grey when it cannot be controlled (e.g., due to missing permissions or connectivity issues), instead of appearing dark.

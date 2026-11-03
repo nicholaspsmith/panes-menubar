@@ -31,9 +31,9 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.11.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.12.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
-<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings… and Quit Panes"></p>
+<p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Preferences… and Quit Panes"></p>
 
 ## Requirements
 
@@ -64,7 +64,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 Each acts on the focused window of the frontmost app. A shortcut is
 swallowed only when it applies: with no movable window in front, nothing to
 restore, or a single display for Next Display, the key passes through to the
-app. Rebind any of them in **Settings… ▸ Shortcuts** (Esc cancels a
+app. Rebind any of them in **Preferences… ▸ Shortcuts** (Esc cancels a
 recording; a shortcut shared by two actions is flagged in red).
 
 ### Center: column, then box
@@ -107,7 +107,7 @@ were in keeps focus throughout.
 - Hold `⌥⌘⇧` (from the start, or add `⇧` while it is up) for half-cells;
   drop `⇧` for 4×4 again.
 
-Turn it off, or set the delay, in **Settings… ▸ General ▸ Grid on Hold ⌥⌘**.
+Turn it off, or set the delay, in **Preferences… ▸ General ▸ Grid on Hold ⌥⌘**.
 
 ![The grid on hold ⌥⌘: sixteen cells numbered 1 to 10 in hex, the front window's cells lit](docs/overlay.png)
 
@@ -123,15 +123,18 @@ top, `9`–`10` the next row, down to `40` bottom-right). The numbers are only a
 guide; no key types them. Let go of `⇧` to return to 4×4. `⌥⌘⇧` on its own is never taken from apps
 and never starts a chord.
 
-<p align="center"><img src="docs/preferences.png" width="500" alt="The Settings window's Shortcuts tab: one row per action with its shortcut, Record and Reset"></p>
+<p align="center"><img src="docs/preferences.png" width="500" alt="The Preferences window's Shortcuts tab: one row per action with its shortcut, Record and Reset"></p>
 
 ### The menu
 
 (Pictured at the top of this page.)
 
 Clicking an item leaves the menu open, so you can try one layout after
-another. The exceptions are Quit and the items ending in "…", which open a
-window (Settings…, Schedule…). Each section starts folded
+another, with its tick or state updated in place (pick a resolution and the
+tick moves to it). The exceptions are Quit and the items ending in "…", which
+open a window (Preferences…, Schedule…). A line you cannot click (a status
+line, a submenu's heading) is greyed, also when it appears as a section
+unfolds. Each section starts folded
 under its heading, the chevron pointing down while folded and up while open.
 
 - **One section per display** (see [Displays and brightness](#displays-and-brightness)),
@@ -157,10 +160,11 @@ under its heading, the chevron pointing down while folded and up while open.
 - **⚠ macOS Edge Tiling Is On…**: shown when Edge Snapping is on and so is
   macOS's own tiling (`com.apple.WindowManager` `EnableTilingByEdgeDrag` /
   `EnableTopTilingByEdgeDrag`; unset means on). Opens Desktop & Dock.
-- **Settings…** (⌘,): every setting, in one window (as in Mac Daddy):
+- **Preferences…** (⌘,): every setting, in the **Panes Preferences**
+  window (as in Mac Daddy and the other Menumon apps; Esc or ⌘W closes it):
   - **General**: Start at Login; **Edge Snapping** (on by default);
     **Brightness Keys** (on by default, see [below](#brightness-keys));
-    the menu-bar **Icon** and, for a meter, its colour (see
+    the **Menu Bar Icon** and, for a meter, its colour (see
     [The icon](#the-icon)); **Grid on Hold ⌥⌘** (on by default) and how
     long to hold (see [below](#grid-on-hold-)); then the version.
   - **Shortcuts**: rebind each action.
@@ -225,7 +229,7 @@ to one monitor at once interfere with each other.
 ### Brightness keys
 
 macOS only lets the brightness keys dim the built-in panel. With
-**Settings… ▸ Brightness Keys** on (the default), Panes catches the plain
+**Preferences… ▸ Brightness Keys** on (the default), Panes catches the plain
 brightness keys:
 
 - **Main display is an external monitor it can drive**: it steps that
@@ -337,7 +341,7 @@ running for the fix to hold.
 
 ## The icon
 
-**Settings… ▸ Icon** picks what sits in the menu bar, from a row of tiles that each show the icon as it would look there:
+**Preferences… ▸ Menu Bar Icon** picks what sits in the menu bar, from a row of tiles that each show the icon as it would look there:
 
 - **Screen Grid** (the default): the windows on your display, as tiles.
 - **Major Pane**: the commander of windows, his pane lit where the front
@@ -410,7 +414,7 @@ still.
 
 - **HotkeyKit** owns the key tap. macOS sets the fn flag on every arrow,
   Home/End, Page Up/Down and Forward Delete event; HotkeyKit drops it there
-  (as on the F-keys), so ⌘⌥← binds as ⌘⌥←. While Settings records a shortcut,
+  (as on the F-keys), so ⌘⌥← binds as ⌘⌥←. While Preferences records a shortcut,
   the tap lets keys through to the recorder. The tap is re-created every 6 s
   to stay ahead of taps other apps add later.
 - **The hold-⌥⌘ grid** rides on the same tap: its `onModifiersChanged`
@@ -505,7 +509,7 @@ open ~/Applications/Panes.app
 
 ### Start at Login (optional)
 
-Toggle it in **Settings… ▸ Start at Login**, or from the shell:
+Toggle it in **Preferences… ▸ Start at Login**, or from the shell:
 
 ```sh
 "$HOME/Applications/Panes.app/Contents/MacOS/Panes" --login on       # or: off, status
@@ -524,7 +528,7 @@ Brightness Keys, XDR's off-on-battery choice, the Night Shift schedule, its
 warmth and saved place, and the meter colour. A setting Panes already has is
 never overwritten. A meter icon (Arc or Gauge; Pie and Wedge become Arc) carries over as
 Panes's icon if you had not picked one; Armonitor does not, so the Screen
-Grid stays the default (pick Armonitor in **Settings… ▸ Icon** to keep him in the bar).
+Grid stays the default (pick Armonitor in **Preferences… ▸ Menu Bar Icon** to keep him in the bar).
 Monitor Lizard's own settings are left where they are.
 
 ### Coming from Rectangle
