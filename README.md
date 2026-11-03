@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.11.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.11.1** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Settings… and Quit Panes"></p>
 
@@ -408,17 +408,15 @@ still.
 
 ## How it works
 
-- **HotkeyKit** owns the key tap. Arrow keys (and Home/End, Page Up/Down,
-  Forward Delete) always carry the fn flag, and HotkeyKit matches modifiers
-  exactly, so each binding on one of those keys is registered twice, with and
-  without fn. While Settings records a shortcut, the tap lets keys through
-  to the recorder. The tap is re-created every 6 s to stay ahead of taps other
-  apps add later.
-- **The hold-⌥⌘ grid** needs a second tap of Panes's own (`ModifierTap`):
-  it shows on modifiers held alone, and HotkeyKit's tap never sees
-  `flagsChanged`. It only watches and never takes a key. `HoldGrid` in
-  PanesCore decides when the grid shows and goes; the grid view is shared
-  with the menu.
+- **HotkeyKit** owns the key tap. macOS sets the fn flag on every arrow,
+  Home/End, Page Up/Down and Forward Delete event; HotkeyKit drops it there
+  (as on the F-keys), so ⌘⌥← binds as ⌘⌥←. While Settings records a shortcut,
+  the tap lets keys through to the recorder. The tap is re-created every 6 s
+  to stay ahead of taps other apps add later.
+- **The hold-⌥⌘ grid** rides on the same tap: its `onModifiersChanged`
+  reports every modifier change and `onKeyDown` every key press, and neither
+  takes anything. `HoldGrid` in PanesCore decides when the grid shows and
+  goes; the grid view is shared with the menu.
 - **Accessibility** (`AXUIElement`) reads and sets the focused window's
   position and size (messaging timeout 0.3 s, so a hung app cannot stall the
   tap). Only standard windows and dialogs whose position is settable, not

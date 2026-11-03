@@ -21,12 +21,6 @@ public enum KeyCode {
     public static let c: CGKeyCode = 8
     public static let n: CGKeyCode = 45
     public static let delete: CGKeyCode = 51
-
-    /// Keys macOS flags as "function keys" on every keyboard: the arrows,
-    /// Home/End, Page Up/Down, Forward Delete and Help. Their events always
-    /// carry the secondary-fn flag, so to HotkeyKit (which matches modifiers
-    /// exactly and only drops that flag on F1–F20) ⌘⌥← arrives as ⌘⌥fn←.
-    public static let impliedFn: Set<CGKeyCode> = [123, 124, 125, 126, 115, 119, 116, 121, 117, 114]
 }
 
 public enum BindingStore {
@@ -56,31 +50,9 @@ public enum BindingStore {
         defaults.map { binding in
             guard let trigger = overrides[binding.token] else { return binding }
             var updated = binding
-            updated.trigger = normalized(trigger)
+            updated.trigger = trigger
             return updated
         }
-    }
-
-    /// What the tap listens for: each binding, plus an fn-flagged twin for a
-    /// key whose events always carry fn (see `KeyCode.impliedFn`). Both, not
-    /// just the twin, so a keyboard or remapper that leaves the flag off still
-    /// matches.
-    public static func tapBindings(_ bindings: [Binding]) -> [Binding] {
-        bindings.flatMap { b -> [Binding] in
-            guard case let .key(code, mods) = b.trigger, KeyCode.impliedFn.contains(code) else { return [b] }
-            var twin = b
-            twin.trigger = .key(code, mods.union(.fn))
-            return [b, twin]
-        }
-    }
-
-    /// A recorded trigger as Panes stores it: the implied fn flag dropped, so
-    /// "⌘⌥←" recorded on any keyboard equals the default.
-    public static func normalized(_ trigger: Trigger) -> Trigger {
-        if case let .key(code, mods) = trigger, KeyCode.impliedFn.contains(code) {
-            return .key(code, mods.subtracting(.fn))
-        }
-        return trigger
     }
 
     /// The other actions sharing a binding's trigger. The tap fires the first

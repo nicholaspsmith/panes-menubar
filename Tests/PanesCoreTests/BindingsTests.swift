@@ -5,6 +5,7 @@
 // Copyright (c) 2026 Nicholas Smith
 
 import XCTest
+import CoreGraphics
 import HotkeyKit
 @testable import PanesCore
 
@@ -48,27 +49,37 @@ final class BindingsTests: XCTestCase {
         XCTAssertEqual(BindingStore.resolve(overrides: ["nope": .key(0, [])]), BindingStore.defaults)
     }
 
-    func testOverrideIsNormalized() {
-        let r = BindingStore.resolve(overrides: [WindowAction.leftHalf.rawValue: .key(123, [.control, .option, .fn])])
-        XCTAssertEqual(r[0].trigger, .key(123, [.control, .option]))
+    /// What the tap sees for a key press with these flags (HotkeyKit drops
+    /// the fn flag macOS sets on every arrow event).
+    private func event(_ code: CGKeyCode, _ flags: CGEventFlags) -> EventSignature {
+        EventSignature(kind: .key(code), modifiers: Modifiers(cgFlags: flags, keyCode: code))
     }
 
-    func testArrowBindingsGetAnFnTwinForTheTap() {
-        let tap = BindingStore.tapBindings(BindingStore.defaults)
-        // The 4 arrow bindings (halves) gain a twin; the 8 letter/⌫ ones do not.
-        XCTAssertEqual(tap.count, 12 + 4)
-        let fnSig = EventSignature(kind: .key(123), modifiers: [.command, .option, .fn])
-        let plainSig = EventSignature(kind: .key(123), modifiers: cmdOpt)
-        XCTAssertEqual(tap.first { $0.matches(fnSig) }?.token, WindowAction.leftHalf.rawValue)
-        XCTAssertEqual(tap.first { $0.matches(plainSig) }?.token, WindowAction.leftHalf.rawValue)
-        let mSig = EventSignature(kind: .key(46), modifiers: [.command, .option, .fn])
-        XCTAssertNil(tap.first { $0.matches(mSig) }, "fn+⌘⌥M is a different chord")
+    func testArrowShortcutsMatchWithOrWithoutTheImpliedFn() {
+        let defaults = BindingStore.defaults
+        for flags: CGEventFlags in [[.maskCommand, .maskAlternate], [.maskCommand, .maskAlternate, .maskSecondaryFn]] {
+            XCTAssertEqual(defaults.first { $0.matches(event(123, flags)) }?.token, WindowAction.leftHalf.rawValue)
+            XCTAssertEqual(defaults.first { $0.matches(event(124, flags)) }?.token, WindowAction.rightHalf.rawValue)
+            XCTAssertEqual(defaults.first { $0.matches(event(126, flags)) }?.token, WindowAction.topHalf.rawValue)
+            XCTAssertEqual(defaults.first { $0.matches(event(125, flags)) }?.token, WindowAction.bottomHalf.rawValue)
+        }
+        let fnM = event(46, [.maskCommand, .maskAlternate, .maskSecondaryFn])
+        XCTAssertNil(defaults.first { $0.matches(fnM) }, "fn+⌘⌥M is a different chord")
+    }
+
+    func testRecordedArrowOverrideMatchesWithTheImpliedFn() {
+        // TriggerRecorder goes through the same Modifiers(cgFlags:keyCode:), so a
+        // recorded ⌃⌥← carries no fn and the tap's ⌃⌥fn← event matches it.
+        let recorded = Trigger.key(123, Modifiers(cgFlags: [.maskControl, .maskAlternate, .maskSecondaryFn], keyCode: 123))
+        XCTAssertEqual(recorded, .key(123, [.control, .option]))
+        let r = BindingStore.resolve(overrides: [WindowAction.leftHalf.rawValue: recorded])
+        XCTAssertEqual(r.first { $0.matches(event(123, [.maskControl, .maskAlternate, .maskSecondaryFn])) }?.token,
+                       WindowAction.leftHalf.rawValue)
     }
 
     func testNextDisplayDoesNotFireLeftOrRightHalf() {
-        let tap = BindingStore.tapBindings(BindingStore.defaults)
         let sig = EventSignature(kind: .key(45), modifiers: [.command, .option])
-        XCTAssertEqual(tap.first { $0.matches(sig) }?.token, WindowAction.nextDisplay.rawValue)
+        XCTAssertEqual(BindingStore.defaults.first { $0.matches(sig) }?.token, WindowAction.nextDisplay.rawValue)
     }
 
     func testConflictsReported() {
@@ -90,8 +101,9 @@ final class TriggerFormatterTests: XCTestCase {
         XCTAssertEqual(TriggerFormatter.string(.key(51, [.command, .option])), "⌥⌘⌫")
     }
 
-    func testImpliedFnIsHidden() {
-        XCTAssertEqual(TriggerFormatter.string(.key(126, [.command, .option, .fn])), "⌥⌘↑")
+    func testRecordedArrowShowsNoFn() {
+        let recorded = Trigger.key(126, Modifiers(cgFlags: [.maskCommand, .maskAlternate, .maskSecondaryFn], keyCode: 126))
+        XCTAssertEqual(TriggerFormatter.string(recorded), "⌥⌘↑")
         XCTAssertEqual(TriggerFormatter.string(.key(46, [.fn, .command])), "fn ⌘M")
     }
 
