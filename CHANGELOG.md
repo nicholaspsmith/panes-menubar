@@ -10,7 +10,8 @@ Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 
 ## [1.12.1] - 2026-11-03
 
-- A keep-open menu row with an image (a status dot) is now wide enough for the image as well as its title, so a long row is no longer clipped at the end.
+- Fixed alignment of status dots in keep-open menu rows so titles line up with other items.
+- Prevented long keep-open menu rows with status dots from being clipped at the end.
 
 ## [1.12.0] - 2026-11-03
 
