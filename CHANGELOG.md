@@ -8,6 +8,11 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.12.4] - 2026-11-04
+
+- XDR Brightness now holds. The screen used to dim again as soon as the slider stopped moving, while the menu still showed the boost.
+- The Brightness readout now shows its full text, such as `XDR +50%`, instead of being cut off at `XDR+`.
+
 ## [1.12.3] - 2026-11-03
 
 - Updated StatusItemKit to 0.38.4

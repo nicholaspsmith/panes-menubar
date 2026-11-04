@@ -108,6 +108,7 @@ extension DisplaysFeature {
         let row = NSMenuItem()
         let position = builtInLevel().map { BuiltInSlider.position($0, xdr: xdrOn) * 100 }
         let view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.systemBrightness == nil ? nil : position, maximum: 100,
+                             valueWidth: Self.builtInValueWidth,
                              // Reads XDR live: it can be switched while the menu is open.
                              format: { [weak self] in BuiltInSlider.label(BuiltInSlider.level(at: $0 / 100, xdr: self?.xdr.isEnabled ?? xdrOn)) }) { [weak self] v in
             self?.setBuiltIn(position: v / 100)
@@ -158,6 +159,9 @@ extension DisplaysFeature {
         builtInRow?.toolTip = Self.builtInToolTip(xdr: xdr.isEnabled)
         refreshBuiltInRow()
     }
+
+    /// Room for the longest readout, "XDR +100%"; the Dim labels are shorter.
+    static let builtInValueWidth: CGFloat = 62
 
     static func builtInToolTip(xdr: Bool) -> String {
         xdr

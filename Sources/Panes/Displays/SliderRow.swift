@@ -19,12 +19,13 @@ final class SliderRow: NSView {
     private let format: (Double) -> String
     private let onChange: (Double) -> Void
 
-    init(title: String, symbol: String, value: Double?, maximum: Double,
+    init(title: String, symbol: String, value: Double?, maximum: Double, valueWidth: CGFloat = 30,
          format: @escaping (Double) -> String, onChange: @escaping (Double) -> Void) {
         self.format = format
         self.onChange = onChange
         slider = NSSlider(value: value ?? 0, minValue: 0, maxValue: maximum, target: nil, action: nil)
-        super.init(frame: NSRect(x: 0, y: 0, width: Self.rowWidth, height: 28))
+        // A wider readout widens the row, so the track keeps its length.
+        super.init(frame: NSRect(x: 0, y: 0, width: Self.rowWidth + valueWidth - 30, height: 28))
         // Stretch to the menu's width, so the slider takes up whatever room
         // the widest item leaves.
         autoresizingMask = [.width]
@@ -56,7 +57,7 @@ final class SliderRow: NSView {
             valueLabel.leadingAnchor.constraint(equalTo: slider.trailingAnchor, constant: 8),
             valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
             valueLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            valueLabel.widthAnchor.constraint(equalToConstant: 30),
+            valueLabel.widthAnchor.constraint(equalToConstant: valueWidth),
         ])
         if let value { show(value) }
     }

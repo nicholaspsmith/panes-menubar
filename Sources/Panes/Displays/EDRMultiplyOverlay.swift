@@ -19,8 +19,9 @@ import DisplayCore
 /// Like `DimOverlayController`'s window it sits above everything, joins every
 /// Space and full-screen app, takes no clicks, and is left out of screenshots
 /// and recordings. It goes with the process, so a crash can't leave it behind.
-/// The layer is redrawn only when `factor` changes: the panel keeps its
-/// headroom while the layer stays up (measured, 10 s with no redraw).
+/// Frames must keep arriving: with `factor` unchanged and nothing presented,
+/// the screen visibly dims while macOS still reports full headroom, so
+/// `XDRController` calls `keepPresenting()` on its headroom timer.
 final class EDRMultiplyOverlay {
     /// 1 or below hides the window, which also lets the panel leave HDR mode.
     var factor: Float = 1 {
@@ -107,6 +108,12 @@ final class EDRMultiplyOverlay {
             draw(factor)
         }
         if !window.isVisible { window.orderFrontRegardless() }
+    }
+
+    /// Presents the current factor again, to hold the boost on screen.
+    func keepPresenting() {
+        guard !closed, factor > 1, window.isVisible else { return }
+        draw(factor)
     }
 
     private func draw(_ value: Float) {
