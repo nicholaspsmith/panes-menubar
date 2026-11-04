@@ -283,6 +283,7 @@ final class XDRController {
         for (id, overlay) in overlays {
             guard let screen = Self.screen(for: id) else { continue }
             follow(id, overlay, screen: screen)
+            overlay.keepPresenting()
         }
     }
 
