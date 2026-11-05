@@ -74,18 +74,18 @@ public enum BrightnessKeys {
     /// 0 is the backlight off). There, down dims instead of switching the
     /// panel off; while dimmed both keys move the dim; and up from off comes
     /// back through the dim. `PanelDim.keyStep` says what each press does.
-    /// With XDR brightness on, up past full brightness steps into the boost,
+    /// Where XDR is available, up past full brightness steps into the boost,
     /// and while boosted both keys move it: the same ladder as the slider.
     public static func route(among displays: [Display], direction: Direction,
                              builtInBrightness: Float?, dimLevel: Float, dimAvailable: Bool,
-                             xdrEnabled: Bool = false, boost: Float = 0) -> Route {
+                             xdrAvailable: Bool = false, boost: Float = 0) -> Route {
         if let id = target(among: displays) { return .external(id) }
         guard dimAvailable, let main = displays.first(where: \.isMain) ?? displays.first, main.isBuiltIn else {
             return .passThrough
         }
         if dimLevel > 0 { return .dim(main.id) }
         guard let b = builtInBrightness else { return .passThrough }
-        if xdrEnabled {
+        if xdrAvailable {
             if boost > 0 { return .boost(main.id) }
             if direction == .up && b >= 0.999 { return .boost(main.id) }
         }

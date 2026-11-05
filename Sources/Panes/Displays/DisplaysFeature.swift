@@ -61,7 +61,7 @@ final class DisplaysFeature: NSObject {
                     builtInBrightness: builtIn.flatMap { self.model.liveSystemBrightness($0.info.id) },
                     dimLevel: self.dimmer.level,
                     dimAvailable: self.dimmer.isAvailable,
-                    xdrEnabled: self.xdr.isEnabled,
+                    xdrAvailable: self.boostAvailable,
                     boost: self.xdr.boost
                 )
             },
@@ -136,6 +136,10 @@ final class DisplaysFeature: NSObject {
         // bar before he leaves it.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.screenLapIfArmonitor() }
 
+        xdr.onRangeChanged = { [weak self] in
+            self?.refreshBuiltInRow()
+            self?.refreshIcon()
+        }
         xdr.start()
         dimmer.start()
         lastBuiltInBrightness = model.entries.first { $0.info.isBuiltIn }?.systemBrightness
@@ -250,6 +254,11 @@ final class DisplaysFeature: NSObject {
         refreshBuiltInRow()
     }
 
+    /// Whether the built-in panel's slider and keys go past full.
+    var boostAvailable: Bool {
+        model.entries.first { $0.info.isBuiltIn }.map { xdr.canBoost($0.info.id) } ?? false
+    }
+
     /// Where the built-in panel is along its one Brightness slider.
     func builtInLevel() -> BuiltInLevel? {
         guard let entry = model.entries.first(where: { $0.info.isBuiltIn }) else { return nil }
@@ -260,9 +269,9 @@ final class DisplaysFeature: NSObject {
     /// boost it stands for.
     func setBuiltIn(position: Double) {
         guard let entry = model.entries.first(where: { $0.info.isBuiltIn }) else { return }
-        let level = BuiltInSlider.level(at: position, xdr: xdr.isEnabled)
+        let level = BuiltInSlider.level(at: position, xdr: boostAvailable)
         dimmer.level = level.dim
-        if xdr.isEnabled { xdr.boost = level.boost }
+        xdr.boost = level.boost
         if entry.systemBrightness != level.brightness {
             lastBuiltInBrightness = level.brightness
             model.setSystemBrightness(entry.info.id, level.brightness)
@@ -272,7 +281,7 @@ final class DisplaysFeature: NSObject {
 
     func refreshBuiltInRow() {
         guard let level = builtInLevel() else { return }
-        builtInRow?.update(value: BuiltInSlider.position(level, xdr: xdr.isEnabled) * 100)
+        builtInRow?.update(value: BuiltInSlider.position(level, xdr: boostAvailable) * 100)
     }
 
     private func modelChanged() {

@@ -8,6 +8,13 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.13.0] - 2026-11-04
+
+- XDR Brightness no longer has a checkbox. Slide the built-in Brightness slider past 100% and XDR turns on, with the readout showing `XDR +50%` and so on. Slide back and it turns off.
+- The brightness-up key also goes past 100% wherever XDR is available, in four +25% steps.
+- The Night Shift schedule's ramp now has From and To warmth sliders. Night Shift turns on at From, moves to To, and goes back to From before it turns off.
+- Fixed Night Shift doing nothing on a monitor macOS 27 treats as a TV. Panes said it worked on that display; it now spots this, asks for your password once and marks the display as a monitor.
+
 ## [1.12.4] - 2026-11-04
 
 - XDR Brightness now holds. The screen used to dim again as soon as the slider stopped moving, while the menu still showed the boost.

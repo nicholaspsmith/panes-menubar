@@ -24,8 +24,8 @@ public struct BuiltInLevel: Equatable {
 
 /// The built-in panel's one Brightness slider, which runs through all three:
 /// Dim along the bottom fifth, macOS's range from its lowest lit step (1/16)
-/// to full across the middle, and, with XDR Brightness on, the boost along the
-/// top fifth. Off (brightness 0) is left to the keys.
+/// to full across the middle, and, where the panel can go past full (`xdr`),
+/// the boost along the top fifth. Off (brightness 0) is left to the keys.
 public enum BuiltInSlider {
     public static let dimShare = 0.2
     public static let boostShare = 0.2

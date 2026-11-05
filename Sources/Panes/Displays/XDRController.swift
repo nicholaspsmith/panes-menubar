@@ -39,17 +39,21 @@ final class XDRController {
     static let offOnBatteryKey = "xdrOffOnBattery"
     private static let settleDelay: TimeInterval = 2
 
-    private(set) var isEnabled = false {
-        // The boost is the top of the Brightness slider, which only exists
-        // while XDR is on; switching off (by hand or on battery) lowers it.
-        didSet { if !isEnabled { boost = 0 } }
-    }
     /// 0…1 across the panel's usable headroom: the top fifth of the built-in
-    /// Brightness slider. Starts at 0, so switching XDR on changes nothing
-    /// until the slider or the keys go past full. In memory only.
+    /// Brightness slider. Anything above 0 is XDR on: the overlay comes up as
+    /// the slider or the keys go past full, and closes as they come back. In
+    /// memory only, so every launch starts at 0.
     var boost: Float = 0 {
-        didSet { update() }
+        didSet {
+            guard boost != oldValue else { return }
+            // A fresh try: the preset may have changed since the last one.
+            if oldValue == 0 { granted = [:] }
+            update()
+        }
     }
+    /// Called when the boost range appears or goes (plugging in, unplugging),
+    /// so an open Brightness slider can re-map.
+    var onRangeChanged: (() -> Void)?
     /// Read through to UserDefaults rather than once at init: the controller
     /// exists before the Monitor Lizard migration copies this key in.
     /// Safe by default: an absent key reads as "switch off on battery".
@@ -59,9 +63,10 @@ final class XDRController {
             UserDefaults.standard.set(newValue, forKey: Self.offOnBatteryKey)
             switchOffIfOnBattery()
             update()
+            onRangeChanged?()
         }
     }
-    /// The toggle can't be turned on while unplugged with "Off on Battery" set.
+    /// No boost while unplugged with "Off on Battery" set.
     /// (No menu row since 2026-09-26: the setting keeps its stored value,
     /// on by default.)
     var isBlockedByBattery: Bool { onBattery && offOnBattery }
@@ -130,16 +135,13 @@ final class XDRController {
 
     /// On quit: the overlay goes before the app does.
     func stop() {
-        isEnabled = false
-        update()
+        boost = 0
     }
 
-    func setEnabled(_ on: Bool) {
-        isEnabled = on && XDRPolicy.canEnable(onBattery: onBattery, offOnBattery: offOnBattery)
-        // A fresh try: the preset may have changed since the last one.
-        if isEnabled { granted = [:] }
-        Log.xdr.info("XDR brightness \(self.isEnabled ? "on" : "off")")
-        update()
+    /// Whether the Brightness slider and keys go past full on this display.
+    func canBoost(_ id: CGDirectDisplayID) -> Bool {
+        XDRPolicy.canEnable(onBattery: onBattery, offOnBattery: offOnBattery)
+            && isSupported(id) && canHaveHeadroom(id)
     }
 
     /// Whether the display is a built-in panel with EDR headroom to boost into.
@@ -194,16 +196,17 @@ final class XDRController {
         onBattery = now
         switchOffIfOnBattery()
         update()
+        onRangeChanged?()
     }
 
     private func switchOffIfOnBattery() {
-        guard XDRPolicy.shouldSwitchOff(enabled: isEnabled, onBattery: onBattery, offOnBattery: offOnBattery) else { return }
-        isEnabled = false
+        guard XDRPolicy.shouldSwitchOff(enabled: boost > 0, onBattery: onBattery, offOnBattery: offOnBattery) else { return }
+        boost = 0
         Log.xdr.info("XDR brightness switched off: on battery")
     }
 
     private func update() {
-        if XDRPolicy.shouldBoost(enabled: isEnabled, asleep: systemAsleep || screensAsleep, settling: settling,
+        if XDRPolicy.shouldBoost(enabled: boost > 0, asleep: systemAsleep || screensAsleep, settling: settling,
                                  onBattery: onBattery, offOnBattery: offOnBattery) {
             apply()
         } else {
@@ -224,7 +227,7 @@ final class XDRController {
             overlays[id] = overlay
             follow(id, overlay, screen: screen)
         }
-        if boost > 0 { startTrackingHeadroom() } else { stopTrackingHeadroom() }
+        startTrackingHeadroom()
     }
 
     /// Sets the overlay's factor from the boost and the headroom the panel
@@ -236,12 +239,6 @@ final class XDRController {
         let factor = XDRBrightness.overlayFactor(boost: boost, headroom: headroom)
         let changed = overlay.factor != factor
         if changed { overlay.factor = factor }
-        guard boost > 0 else {
-            // Hidden: the next boost asks afresh.
-            asking[id] = nil
-            if boosted.remove(id) != nil { Log.xdr.info("display \(id): boost 0, overlay hidden") }
-            return
-        }
         if XDRBrightness.isHDREngaged(currentHeadroom: headroom) {
             granted[id] = headroom
             if let since = asking.removeValue(forKey: id) {

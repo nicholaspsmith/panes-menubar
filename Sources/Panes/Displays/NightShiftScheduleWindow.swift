@@ -50,6 +50,10 @@ private struct NightShiftScheduleView: View {
                     ForEach(NightShiftSchedule.rampChoices, id: \.self) { Text(Self.duration($0)).tag($0) }
                 }
                 .disabled(!scheduler.schedule.ramps)
+                WarmthRow(title: "From", value: $scheduler.fromWarmth)
+                    .disabled(!scheduler.schedule.ramps)
+                WarmthRow(title: "To", value: toWarmth)
+                    .disabled(!scheduler.schedule.ramps)
                 Text(rampNote).font(.caption).foregroundStyle(.secondary)
             }
             .disabled(!scheduler.schedule.isEnabled)
@@ -65,12 +69,18 @@ private struct NightShiftScheduleView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// Through the scheduler, as the menu's Warmth slider goes: it's the same
+    /// setting.
+    private var toWarmth: Binding<Float> {
+        Binding(get: { scheduler.warmth }, set: { scheduler.warmthSliderMoved(to: $0) })
+    }
+
     private var usesSun: Bool { scheduler.schedule.on.anchor == .sun || scheduler.schedule.off.anchor == .sun }
 
     private var rampNote: String {
         let span = Self.duration(scheduler.schedule.rampMinutes)
-        return "Warmth climbs from none to \(Int((scheduler.warmth * 100).rounded())) over the first \(span) after "
-            + "Night Shift turns on, and fades over the last \(span) before it turns off. Set the top with the menu's Warmth slider."
+        return "Night Shift turns on at From, reaches To over the first \(span), and goes back to From over the last \(span) "
+            + "before it turns off. The menu's Warmth slider sets To."
     }
 
     private var summary: String {
@@ -98,6 +108,22 @@ private struct NightShiftScheduleView: View {
         if minutes < 60 { return "\(minutes) min" }
         let h = Double(minutes) / 60
         return h == h.rounded() ? "\(Int(h)) h" : String(format: "%.1f h", h)
+    }
+}
+
+private struct WarmthRow: View {
+    let title: String
+    @Binding var value: Float
+
+    var body: some View {
+        LabeledContent(title) {
+            HStack {
+                Slider(value: $value, in: 0...1)
+                Text("\(Int((value * 100).rounded()))")
+                    .monospacedDigit()
+                    .frame(width: 30, alignment: .trailing)
+            }
+        }
     }
 }
 
