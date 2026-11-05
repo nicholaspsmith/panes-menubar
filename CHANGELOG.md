@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.13.1] - 2026-11-05
+
+- The README's pictures now show the Preferences window and the menu as they are today.
+
 ## [1.13.0] - 2026-11-04
 
 - XDR Brightness no longer has a checkbox. Slide the built-in Brightness slider past 100% and XDR turns on, with the readout showing `XDR +50%` and so on. Slide back and it turns off.
