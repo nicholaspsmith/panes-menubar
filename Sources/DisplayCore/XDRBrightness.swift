@@ -59,7 +59,7 @@ public enum XDRBrightness {
 public enum XDRPolicy {
     /// On since the multiply-composited EDR overlay replaced the transfer
     /// table (issue #28): on macOS 27 an M5 Pro/Max panel ignores the table
-    /// (Apple FB22273730). Turning this off greys XDR Brightness out.
+    /// (Apple FB22273730). Turning this off stops the slider at full.
     public static let available = true
 
     /// The most potential headroom an SDR preset offers: "Apple Display

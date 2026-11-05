@@ -95,6 +95,28 @@ final class NightShiftScheduleTests: XCTestCase {
         XCTAssertEqual(s.rampFactor(at: date(2026, 3, 2, 21, 30), in: w), 0.5, accuracy: 1e-9)
     }
 
+    func testRampRunsBetweenTheFromAndToWarmth() {
+        let s = NightShiftSchedule(isEnabled: true, ramps: true, rampMinutes: 60)
+        let w = NightShiftSchedule.Window(on: date(2026, 3, 2, 21), off: date(2026, 3, 3, 7))
+        XCTAssertEqual(s.warmth(at: date(2026, 3, 2, 21), in: w, from: 0.2, to: 0.8), 0.2, accuracy: 1e-6)
+        XCTAssertEqual(s.warmth(at: date(2026, 3, 2, 21, 30), in: w, from: 0.2, to: 0.8), 0.5, accuracy: 1e-6)
+        XCTAssertEqual(s.warmth(at: date(2026, 3, 3, 1), in: w, from: 0.2, to: 0.8), 0.8, accuracy: 1e-6)
+        XCTAssertEqual(s.warmth(at: date(2026, 3, 3, 6, 30), in: w, from: 0.2, to: 0.8), 0.5, accuracy: 1e-6)
+    }
+
+    func testRampCanRunDownward() {
+        let s = NightShiftSchedule(isEnabled: true, ramps: true, rampMinutes: 60)
+        let w = NightShiftSchedule.Window(on: date(2026, 3, 2, 21), off: date(2026, 3, 3, 7))
+        XCTAssertEqual(s.warmth(at: date(2026, 3, 2, 21), in: w, from: 1, to: 0.5), 1, accuracy: 1e-6)
+        XCTAssertEqual(s.warmth(at: date(2026, 3, 3, 1), in: w, from: 1, to: 0.5), 0.5, accuracy: 1e-6)
+    }
+
+    func testNoRampHoldsTheToWarmth() {
+        let s = NightShiftSchedule(isEnabled: true, ramps: false)
+        let w = NightShiftSchedule.Window(on: date(2026, 3, 2, 21), off: date(2026, 3, 3, 7))
+        XCTAssertEqual(s.warmth(at: date(2026, 3, 2, 21), in: w, from: 0.2, to: 0.8), 0.8, accuracy: 1e-6)
+    }
+
     func testNoRampIsFull() {
         let s = NightShiftSchedule(isEnabled: true)
         let w = NightShiftSchedule.Window(on: date(2026, 3, 2, 21), off: date(2026, 3, 3, 7))

@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.12.4** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.13.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW and Night Shift section headings, folded; the 8×8 layout grid, as wide as the separator lines above and below it; the Shortcuts row, folded; then Preferences… and Quit Panes"></p>
 
@@ -214,8 +214,7 @@ opened (per display):
 | **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors: the ones the keyboard brightness keys already work on). |
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
-| **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. |
-| **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See [XDR brightness](#xdr-brightness). |
+| **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. On a built-in XDR panel the top fifth brightens past full and the readout says "XDR +50%": see [XDR brightness](#xdr-brightness). The brightness keys walk the same ladder. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See [Night Shift on a monitor macOS thinks is a TV](#night-shift-on-a-monitor-macos-thinks-is-a-tv). |
 
 Sliders apply live as you drag. Displays are never polled, and Panes stores
@@ -241,7 +240,7 @@ brightness keys:
   key passes through to macOS, except that at the built-in panel's lowest lit
   step brightness-down enters [Dim](#dim) instead of switching the screen off.
   After the deepest dim step the next press switches it off; brightness-up
-  walks back the same way. With XDR Brightness on, brightness-up past full
+  walks back the same way. Where XDR is available, brightness-up past full
   steps into the boost in four +25% steps.
 
 Holding a key repeats. `Ctrl` + brightness is never touched, so
@@ -271,10 +270,11 @@ apply at once.
 
 ### XDR brightness
 
-On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
-display) extends the built-in Brightness slider: its top fifth pushes the
-whole screen past the normal ceiling, up to twice SDR white, using the
-panel's HDR headroom. The readout says "XDR +50%" and so on. It works on M5
+On a MacBook Pro with an XDR panel there is nothing to switch on: slide the
+built-in Brightness slider past 100%. Its top fifth pushes the whole screen
+past the normal ceiling, up to twice SDR white, using the panel's HDR
+headroom, and the readout says "XDR +50%" and so on. Sliding back below that
+turns it off. It works on M5
 Macs, where Monitor Lizard's version could not (macOS 27 ignores the
 brightness table it wrote on an M5 Pro/Max panel, Apple FB22273730).
 
@@ -286,7 +286,7 @@ the boost follows it. Like Dim's overlay it joins every Space and is left
 out of screenshots.
 
 The headroom only exists on an XDR preset. On "Apple Display (P3-600 nits)"
-and the other SDR presets the toggle is greyed, and a line under it says
+and the other SDR presets the slider stops at 100%, and a line under it says
 **Set Displays ▸ Preset to Apple XDR Display (P3-1600 nits)** (System
 Settings ▸ Displays ▸ Preset).
 
@@ -296,7 +296,7 @@ comes back only once things settle. Being a window, it goes with the app, so
 even a crash cannot leave a boost behind. It is never applied to external
 displays and is off every time Panes starts.
 
-On battery, XDR Brightness switches off and the menu shows "XDR Brightness ·
+On battery, the slider stops at 100% and the menu shows "XDR Brightness ·
 off on battery" until you plug in. To allow it on battery:
 `defaults write com.nicholaspsmith.Panes xdrOffOnBattery -bool false`.
 
@@ -314,10 +314,10 @@ switches it ("On at 9:00 PM"), and **Schedule…** opens a small window:
 - **Turn off**: at sunrise, or at a set time, with the same offsets.
 - Each sun-based row shows the next sunset or sunrise and the time Night
   Shift will actually switch, offset included.
-- **Ramp the warmth**: Night Shift starts with no warmth and climbs to the
-  Warmth slider's setting over the first 15 min to 3 h, then fades over the
-  same span before it turns off. While the ramp runs, the Warmth slider sets
-  the warmth it climbs to.
+- **Ramp the warmth**: Night Shift turns on at the **From** warmth and moves
+  to the **To** warmth over the first 15 min to 3 h, then goes back to From
+  over the same span before it turns off. From starts at none. To is the
+  menu's Warmth slider while the ramp runs.
 
 The line under Schedule… says when Night Shift next turns on or off.
 Switching Night Shift by hand (from the menu or Control Center) holds until
@@ -467,8 +467,9 @@ still.
   table is written, so nothing outlives the process.
 - **Night Shift** uses CoreBrightness. The schedule's place comes from Core
   Location (When In Use), saved with the date it was found.
-- **The "is this a TV?" flag** comes from CoreDisplay, the same source
-  `system_profiler` reads. **The TV fix** is a plist at
+- **The "is this a TV?" flag** comes from CoreDisplay and `system_profiler`
+  (run when the displays change). Since macOS 27 CoreDisplay reports the flag
+  only when an override sets it. **The TV fix** is a plist at
   `/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-<hex>/DisplayProductID-<hex>`
   containing `DisplayIsTV = false`; macOS reads it when the display attaches.
 - **DisplayCore** holds the displays' testable logic (Monitor Lizard's core):

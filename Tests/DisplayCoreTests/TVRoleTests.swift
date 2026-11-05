@@ -54,4 +54,43 @@ final class TVRoleTests: XCTestCase {
         let sameModelNewID = DisplayInfo(id: 9, name: "DELL U3818DW", vendorID: 4268, productID: 41200, serial: 1, isBuiltIn: false, isMain: false, isTV: true, isHDMI: true)
         XCTAssertEqual(tracker.state(for: sameModelNewID), .skipped)
     }
+
+    // MARK: - macOS 27: the flag only shows in system_profiler
+
+    /// Trimmed from `system_profiler SPDisplaysDataType -json` on macOS 27,
+    /// with the Dell on HDMI before it had an override.
+    private static let profilerJSON = """
+    {"SPDisplaysDataType": [{"_name": "Apple M5 Pro", "spdisplays_ndrvs": [
+      {"_name": "DELL U3818DW", "_spdisplays_display-product-id": "a0f2",
+       "_spdisplays_display-vendor-id": "10ac", "spdisplays_television": "spdisplays_yes"},
+      {"_name": "Studio", "_spdisplays_display-product-id": "1114",
+       "_spdisplays_display-vendor-id": "610"},
+      {"_name": "Set off", "_spdisplays_display-product-id": "b",
+       "_spdisplays_display-vendor-id": "a", "spdisplays_television": "spdisplays_no"}
+    ]}]}
+    """.data(using: .utf8)!
+
+    func testProfilerNamesOnlyTheDisplaysItCallsTelevisions() {
+        XCTAssertEqual(TVScan.televisions(inProfilerJSON: Self.profilerJSON),
+                       [DisplayModelID(vendorID: 0x10ac, productID: 0xa0f2)])
+    }
+
+    func testUnreadableProfilerOutputNamesNoTelevisions() {
+        XCTAssertEqual(TVScan.televisions(inProfilerJSON: Data("not json".utf8)), [])
+        XCTAssertEqual(TVScan.televisions(inProfilerJSON: Data("{}".utf8)), [])
+    }
+
+    func testDisplayTheProfilerCallsATelevisionIsBlocked() {
+        let tracker = TVRoleTracker(fileExists: { _ in false })
+        XCTAssertEqual(tracker.state(for: dellOK), .ok)
+        tracker.reportedTVs = [DisplayModelID(vendorID: 4268, productID: 41200)]
+        XCTAssertEqual(tracker.state(for: dellOK), .blocked)
+        XCTAssertTrue(tracker.needsFix(dellOK))
+    }
+
+    func testReportedTelevisionWithAnOverrideWaitsForReconnect() {
+        let tracker = TVRoleTracker(fileExists: { _ in true })
+        tracker.reportedTVs = [DisplayModelID(vendorID: 4268, productID: 41200)]
+        XCTAssertEqual(tracker.state(for: dellOK), .fixedPendingReconnect)
+    }
 }

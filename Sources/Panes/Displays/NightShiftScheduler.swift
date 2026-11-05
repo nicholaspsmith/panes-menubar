@@ -14,6 +14,7 @@ import DisplayCore
 final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let scheduleKey = "nightShiftSchedule"
     static let warmthKey = "nightShiftScheduleWarmth"
+    static let fromWarmthKey = "nightShiftScheduleFromWarmth"
     static let placeKey = "nightShiftPlace"
     private static let tick: TimeInterval = 30
 
@@ -46,6 +47,16 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
         didSet { defaults.set(warmth, forKey: Self.warmthKey); apply() }
     }
 
+    /// The warmth at the on and off times, when ramping. Kept beside `warmth`
+    /// rather than in the schedule, whose saved form has no such field.
+    @Published var fromWarmth: Float {
+        didSet {
+            defaults.set(fromWarmth, forKey: Self.fromWarmthKey)
+            lastRampStrength = nil
+            apply()
+        }
+    }
+
     /// Where the sun's times are worked out for: the Mac's location when
     /// Location Services allow it, else the time zone's principal city.
     @Published private(set) var place: Coordinate?
@@ -59,6 +70,7 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
         self.defaults = defaults
         schedule = Self.load(NightShiftSchedule.self, Self.scheduleKey, defaults) ?? NightShiftSchedule()
         warmth = defaults.object(forKey: Self.warmthKey) as? Float ?? max(0.5, backend.status().strength)
+        fromWarmth = defaults.object(forKey: Self.fromWarmthKey) as? Float ?? 0
         super.init()
         if let saved = Self.load(Coordinate.self, Self.placeKey, defaults) {
             place = saved
@@ -106,7 +118,7 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
     /// The warmth the ramp calls for right now, if the ramp is in charge.
     var rampedWarmth: Float? {
         guard schedule.isEnabled, schedule.ramps, let w = currentWindow else { return nil }
-        return warmth * Float(schedule.rampFactor(at: Date(), in: w))
+        return schedule.warmth(at: Date(), in: w, from: fromWarmth, to: warmth)
     }
 
     // MARK: - Applying

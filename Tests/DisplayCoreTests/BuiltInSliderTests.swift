@@ -38,7 +38,7 @@ final class BuiltInSliderTests: XCTestCase {
     func testPositionOfStatesTheSliderCanNotMake() {
         // Below 1/16 lights the same as 1/16.
         XCTAssertEqual(BuiltInSlider.position(L(dim: 0, brightness: 0.03, boost: 0), xdr: false), 0.2, accuracy: 1e-6)
-        // A boost only counts at full brightness, and only with XDR on.
+        // A boost only counts at full brightness, and only where XDR is available.
         XCTAssertEqual(BuiltInSlider.position(L(dim: 0, brightness: 1, boost: 0.5), xdr: false), 1, accuracy: 1e-6)
         XCTAssertEqual(BuiltInSlider.position(L(dim: 0, brightness: 0.5, boost: 0.5), xdr: true),
                        BuiltInSlider.position(L(dim: 0, brightness: 0.5, boost: 0), xdr: true), accuracy: 1e-6)

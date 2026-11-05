@@ -32,8 +32,8 @@ public struct NightShiftSchedule: Codable, Equatable {
     public var isEnabled: Bool
     public var on: Edge
     public var off: Edge
-    /// Warmth climbs from nothing to the chosen warmth over `rampMinutes`
-    /// after turning on, and falls back over the same before turning off.
+    /// Warmth moves from the From warmth to the To warmth over `rampMinutes`
+    /// after turning on, and back over the same before turning off.
     public var ramps: Bool
     public var rampMinutes: Int
 
@@ -100,6 +100,14 @@ public struct NightShiftSchedule: Codable, Equatable {
         let up = date.timeIntervalSince(window.on) / ramp
         let down = window.off.timeIntervalSince(date) / ramp
         return max(0, min(1, up, down))
+    }
+
+    /// The warmth to show at `date` in `window`, between the From warmth (at
+    /// the on and off times) and the To warmth (between the ramps). `from`
+    /// plays no part without ramping.
+    public func warmth(at date: Date, in window: Window, from: Float, to: Float) -> Float {
+        guard ramps else { return to }
+        return from + (to - from) * Float(rampFactor(at: date, in: window))
     }
 }
 

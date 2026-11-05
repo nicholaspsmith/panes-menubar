@@ -73,7 +73,7 @@ final class BrightnessKeysTests: XCTestCase {
                        brightness: Float? = 0.5, dim: Float = 0, available: Bool = true,
                        xdr: Bool = false, boost: Float = 0) -> BrightnessKeys.Route {
         BrightnessKeys.route(among: displays, direction: d, builtInBrightness: brightness, dimLevel: dim, dimAvailable: available,
-                             xdrEnabled: xdr, boost: boost)
+                             xdrAvailable: xdr, boost: boost)
     }
 
     // With XDR on, up past full brightness steps into the boost, and while

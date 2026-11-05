@@ -41,6 +41,8 @@ final class DisplayModel {
     var onWrite: (() -> Void)?
     var onNeedsTVFix: ((DisplayInfo) -> Void)?
     private var refreshWork: DispatchWorkItem?
+    /// Counts `TVScan`s, so only the latest one's answer is used.
+    private var tvScans = 0
     /// Pending re-reads after a failed brightness read, and how many each
     /// display has had (`DDCRetry`).
     private var rereadWork: [CGDirectDisplayID: DispatchWorkItem] = [:]
@@ -114,6 +116,29 @@ final class DisplayModel {
         onChange?()
         for e in entries where tvRoles.needsFix(e.info) { onNeedsTVFix?(e.info) }
         readValues()
+        scanForTVs()
+    }
+
+    /// Asks `system_profiler` which displays are TVs, off the main thread, and
+    /// re-reads each display's Night Shift state from the answer.
+    private func scanForTVs() {
+        guard entries.contains(where: { !$0.info.isBuiltIn }) else {
+            tvRoles.reportedTVs = []
+            return
+        }
+        tvScans += 1
+        let scan = tvScans
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let tvs = TVScan.run()
+            DispatchQueue.main.async {
+                guard let self, scan == self.tvScans, tvs != self.tvRoles.reportedTVs else { return }
+                Log.tvrole.info("system_profiler names \(tvs.count) television(s)")
+                self.tvRoles.reportedTVs = tvs
+                for i in self.entries.indices { self.entries[i].tvState = self.tvRoles.state(for: self.entries[i].info) }
+                self.onChange?()
+                for e in self.entries where self.tvRoles.needsFix(e.info) { self.onNeedsTVFix?(e.info) }
+            }
+        }
     }
 
     func readValues() {

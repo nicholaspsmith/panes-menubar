@@ -102,49 +102,32 @@ extension DisplaysFeature {
 
     /// The built-in panel's one Brightness slider: Dim along the bottom
     /// fifth, macOS's range in the middle, and the XDR boost along the top
-    /// fifth while XDR Brightness is on (`BuiltInSlider`).
+    /// fifth where the panel has headroom (`BuiltInSlider`).
     private func addBuiltInBrightnessRow(_ entry: DisplayModel.Entry, to menu: NSMenu) {
-        let xdrOn = xdr.isEnabled
+        let canBoost = xdr.canBoost(entry.info.id)
         let row = NSMenuItem()
-        let position = builtInLevel().map { BuiltInSlider.position($0, xdr: xdrOn) * 100 }
+        let position = builtInLevel().map { BuiltInSlider.position($0, xdr: canBoost) * 100 }
         let view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.systemBrightness == nil ? nil : position, maximum: 100,
                              valueWidth: Self.builtInValueWidth,
-                             // Reads XDR live: it can be switched while the menu is open.
-                             format: { [weak self] in BuiltInSlider.label(BuiltInSlider.level(at: $0 / 100, xdr: self?.xdr.isEnabled ?? xdrOn)) }) { [weak self] v in
+                             // Reads the range live: plugging in or unplugging moves it while the menu is open.
+                             format: { [weak self] in BuiltInSlider.label(BuiltInSlider.level(at: $0 / 100, xdr: self?.boostAvailable ?? canBoost)) }) { [weak self] v in
             self?.setBuiltIn(position: v / 100)
         }
-        view.toolTip = Self.builtInToolTip(xdr: xdrOn)
+        view.toolTip = Self.builtInToolTip
         row.view = view
         builtInRow = view
         menu.addItem(row)
     }
 
-    /// XDR brightness: only on a built-in panel with EDR headroom. On a preset
-    /// that can't give headroom (or once the panel granted none), a disabled
-    /// line under the toggle says which preset to pick.
+    /// Why the slider stops at full on a panel that could go past it: on
+    /// battery, or on a preset that can't give headroom (or once the panel
+    /// granted none).
     private func addXDRRows(_ entry: DisplayModel.Entry, to menu: NSMenu) {
         let id = entry.info.id
-        guard xdr.isSupported(id) else { return }
-        let toggle: NSMenuItem
-        if !XDRPolicy.available {
-            toggle = InfoMenuItem.make("XDR Brightness · unavailable")
-            toggle.toolTip = "XDR Brightness is switched off in this build."
-            menu.addItem(toggle)
-            return
-        } else if xdr.isBlockedByBattery {
-            toggle = InfoMenuItem.make("XDR Brightness · off on battery")
-        } else if !xdr.canHaveHeadroom(id) && !xdr.isEnabled {
-            // No headroom to be had on this preset; the hint below says why.
-            toggle = InfoMenuItem.make("XDR Brightness")
-        } else {
-            // Keeps the menu open; the Brightness slider above re-maps at once.
-            toggle = ToggleMenuItem.make(title: "XDR Brightness", isOn: xdr.isEnabled) { [weak self] on in
-                self?.setXDR(on)
-            }
+        guard XDRPolicy.available, xdr.isSupported(id) else { return }
+        if xdr.isBlockedByBattery {
+            menu.addItem(InfoMenuItem.make("XDR Brightness · off on battery"))
         }
-        toggle.toolTip = "Extends the Brightness slider (and the brightness-up key) past full, into the panel's HDR headroom. Off again at every launch."
-        ToggleMenuItem.view(of: toggle)?.toolTip = toggle.toolTip
-        menu.addItem(toggle)
         if let hint = xdr.presetHint(id) {
             let row = InfoMenuItem.make(hint)
             row.toolTip = "XDR Brightness needs headroom above SDR white, which only the XDR preset gives (System Settings ▸ Displays ▸ Preset)."
@@ -152,22 +135,10 @@ extension DisplaysFeature {
         }
     }
 
-    /// XDR on or off from the menu, with the open Brightness slider (its
-    /// position, label and tooltip) following straight away.
-    func setXDR(_ on: Bool) {
-        xdr.setEnabled(on)
-        builtInRow?.toolTip = Self.builtInToolTip(xdr: xdr.isEnabled)
-        refreshBuiltInRow()
-    }
-
     /// Room for the longest readout, "XDR +100%"; the Dim labels are shorter.
     static let builtInValueWidth: CGFloat = 62
 
-    static func builtInToolTip(xdr: Bool) -> String {
-        xdr
-            ? "The bottom of the slider dims past the lowest brightness; the top brightens past full using the panel's HDR headroom."
-            : "The bottom of the slider dims past the lowest brightness. Turn on XDR Brightness to brighten past full."
-    }
+    static let builtInToolTip = "The bottom of the slider dims past the lowest brightness. Where the panel has HDR headroom, the top brightens past full."
 
     @objc func pickMode(_ sender: NSMenuItem) {
         guard let box = sender.representedObject as? ModeBox else { return }
