@@ -31,7 +31,7 @@ menu-bar shell) and [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit)
 (the global key-tap engine). Part of
 [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.14.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
+**Version 1.15.0** · [Changelog](https://github.com/nicholaspsmith/panes-menubar/releases)
 
 <p align="center"><img src="docs/menu.png" width="320" alt="The Panes menu: the DELL U3818DW section open, with its Brightness, Contrast and Resolution sliders and a line saying Night Shift works on this display; Night Shift folded under its heading; the 8×8 layout grid, its left half lit for the front window; the folded Shortcuts row; then Preferences… and Quit Panes"></p>
 
